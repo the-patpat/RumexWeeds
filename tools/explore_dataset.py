@@ -306,7 +306,7 @@ classes = dataset.default_classes
 
 #YOLOX specific predictor
 #%%YOLO DN 53
-predictor = demo.Predictor(model, exp, exp.classes_to_consider, None, None, 'gpu', False, False) 
+predictor = demo.Predictor(model, exp, exp.classes_to_consider, None, None, 'gpu', True, False) 
 add_preds_yolox(dataset, device, predictor, field_name=f"predictions_{exp.exp_name}")
 #%%  Load yolox s outputs
 state_dict = torch.load('/home/pat/YOLOX/YOLOX_outputs/yolox_s_rumexweeds/best_ckpt_single.pth', map_location='cpu')
@@ -317,7 +317,7 @@ model.load_state_dict(state_dict["model"])
 #Turns off some normalization and dropout layers, sets training variables to false
 model.eval()
 #YOLOX specific predictor
-predictor = demo.Predictor(model, exp, exp.classes_to_consider, None, None, 'gpu', False, False) 
+predictor = demo.Predictor(model, exp, exp.classes_to_consider, None, None, 'gpu', True, False) 
 add_preds_yolox(dataset, device, predictor, field_name=f"predictions_{exp.exp_name}")
 #%%  Load yolox s outputs
 state_dict = torch.load('/home/pat/YOLOX/YOLOX_outputs/yolox_l_rumexweeds/best_ckpt.pth', map_location='cpu')
@@ -328,7 +328,7 @@ model.load_state_dict(state_dict["model"])
 #Turns off some normalization and dropout layers, sets training variables to false
 model.eval()
 #YOLOX specific predictor
-predictor = demo.Predictor(model, exp, exp.classes_to_consider, None, None, 'gpu', False, False) 
+predictor = demo.Predictor(model, exp, exp.classes_to_consider, None, None, 'gpu', True, False) 
 add_preds_yolox(dataset, device, predictor, field_name=f"predictions_{exp.exp_name}")
 
 #%% Get YOLOv5 tags
