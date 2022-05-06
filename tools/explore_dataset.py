@@ -236,30 +236,56 @@ for dimension, anchor in zip(km.cluster_centers_, km_corner.cluster_centers_):
     ax.add_collection(PatchCollection([Rectangle((anchor[0]*1920, anchor[1]*1200), dimension[0]*1920, dimension[1]*1200)], alpha=0.2))
 ax.set_title("Anchor Boxes on RumexWeeds")
 
-#%% Get YOLOv5 tags (export the dataset in YOLO format)
+#%% Get YOLOv5 tags (export the dataset in YOLO format) (single class)
 
 # Get class list
 classes = dataset.default_classes
 
 export_dir = "~/onedrive/Thesis/Experiments/RumexWeeds-YOLOv5/labels/"
 
-label_field = "ground_truth_detections"  # for example
+# Omit the _single to export the two-class dataset
+label_field = "ground_truth_detections_single"  # for example
 
 # The splits to export
 splits = ["train", "val", "test"]
 
 # All splits must use the same classes list
-classes = ["rumex_obtusifolius"]
+# Use ["rumex_obtusifolius", "rumex_crispus"] for the two-class dataset
+classes = ["rumex"]
 
 # The dataset or view to export
 # We assume the dataset uses sample tags to encode the splits to export
-
 # Export the splits
 for split in splits:
     split_view = dataset.match_tags(split)
     split_view.export(
         labels_path=export_dir+split,
         dataset_type=fo.types.YOLOv5Dataset,
+        label_field=label_field,
+        split=split,
+        classes=classes,
+    )
+#%%
+export_dir = "~/onedrive/Thesis/Experiments/RumexWeeds-COCO/labels/"
+
+# Omit the _single to export the two-class dataset
+label_field = "ground_truth_detections_single"  # for example
+
+# The splits to export
+splits = ["train", "val", "test"]
+
+# All splits must use the same classes list
+# Use ["rumex_obtusifolius", "rumex_crispus"] for the two-class dataset
+classes = ["rumex"]
+
+# The dataset or view to export
+# We assume the dataset uses sample tags to encode the splits to export
+# Export the splits
+for split in splits:
+    split_view = dataset.match_tags(split)
+    split_view.export(
+        labels_path=export_dir+split,
+        dataset_type=fo.types.COCODetectionDataset,
         label_field=label_field,
         split=split,
         classes=classes,
