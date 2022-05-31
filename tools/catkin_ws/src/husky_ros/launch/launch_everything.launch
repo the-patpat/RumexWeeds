@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<launch>
+    <param name="use_sim_time" value="true"/>
+    <arg name="node_start_delay" default="10.0"/>  
+    <arg name="seq_dir" default=""/>
+    <param name="seq_dir" value="$(arg seq_dir)">
+    <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find husky_ros)/rviz.rviz"/>
+    <node name="settime" pkg="husky_ros" type="set_rostime.py" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>
+    <node name="tf_pub" pkg="husky_ros" type="tf_publisher.py" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>
+    <node name="static_tf_pub" pkg="tf" type="static_transform_publisher" output="screen" args="0 0 0 0 0 0 base_footprint odom 10" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>  
+    <node name="rgb_pub" pkg="husky_ros" type="rgb_publisher.py" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>
+    <node name="gps_pub" pkg="husky_ros" type="gps_publisher.py" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>
+    <node name="imu_pub" pkg="husky_ros" type="imu_publisher.py" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>
+    <node name="odom_pub" pkg="husky_ros" type="odom_publisher.py" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>   
+</launch>
