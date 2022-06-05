@@ -22,7 +22,7 @@ for x in ["test", "train", "val"]:
         #Take abspath, easier to find later
         d_split[x] = [os.path.abspath(dataset_top_dir + loc_seq_pic.replace('\n', '')) for loc_seq_pic in f.readlines()]
         f.close()
-
+#%%
 
 if not fo.dataset_exists(base_name):
     # Create the dataset by creating the sub-datasets and appending them to a list
@@ -199,8 +199,8 @@ session.show()
 bb_hist = fo.NumericalHistogram(F('ground_truth_detections.detections[]').apply(F('bounding_box')[0]), init_view = dataset)
 bb_hist.show()
 #%% Area histogram
-bb_area_hist = fo.NumericalHistogram(F('ground_truth_detections.detections[]').apply(F('bounding_box')[2] * F('bounding_box')[3]), init_view=dataset)
-session.plots.attach(bb_area_hist)
+bb_area_hist = fo.NumericalHistogram(F('ground_truth_detections.detections[]', histnorm='probability').apply(F('bounding_box')[2] * F('bounding_box')[3]), init_view=dataset)
+#session.plots.attach(bb_area_hist)
 bb_area_hist.show()
 
 #%%BB dimension clustering

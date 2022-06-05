@@ -31,6 +31,6 @@ def set_ros_time(seq_dir, use_sim_time=True):
             rospy.signal_shutdown("Iterator exhausted")
 if __name__ == '__main__':
     try:
-        set_ros_time('/home/pat/onedrive/Thesis/Experiments/RumexWeeds/data/20210806_hegnstrup/seq0', rospy.get_param("/use_sim_time"))
+        set_ros_time(rospy.get_param('/seq_dir'), rospy.get_param("/use_sim_time"))
     except rospy.ROSInterruptException:
         pass 

@@ -56,6 +56,6 @@ def talker(seq_dir):
 
 if __name__ == '__main__':
     try:
-        talker('/home/pat/onedrive/Thesis/Experiments/RumexWeeds/data/20210806_hegnstrup/seq0')
+        talker(rospy.get_param('/seq_dir'))
     except rospy.ROSInterruptException:
         pass

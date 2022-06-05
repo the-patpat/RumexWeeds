@@ -9,12 +9,13 @@ from datetime import time
 from sensor_msgs.msg import Imu 
 import json
 import copy
+import os
 
 
-def talker():
+def talker(seq_dir):
     
     #This will be variable or replaced by either loc/seq or just loc with all seqs
-    with open('/home/pat/onedrive/Thesis/Experiments/RumexWeeds/data/20210806_hegnstrup/seq0/imu.json', 'r') as f:
+    with open(os.path.join(seq_dir, 'imu.json'), 'r') as f:
         imu_hist = json.load(f, object_pairs_hook=OrderedDict)
 
     keys = list(imu_hist.keys())
@@ -51,6 +52,6 @@ def talker():
 
 if __name__ == '__main__':
     try:
-        talker()
+        talker(rospy.get_param('/seq_dir'))
     except rospy.ROSInterruptException:
         pass
