@@ -1,16 +1,13 @@
 #%% Imports
-from fileinput import filename
-from cv2 import FileStorage_NAME_EXPECTED
 import fiftyone as fo
 import json
 import os
 import copy
 from fiftyone import ViewExpression as F
 
-from torch import normal
 
 dataset = fo.load_dataset('RumexWeeds')
-dataset_top_dir = "../data/"
+dataset_top_dir = "/mnt/d/OneDrive - Danmarks Tekniske Universitet/Thesis/Experiments/RumexWeeds/data"
 #classes = dataset.default_classes
 #%% YOLOx labels add (obtained via tools/eval.py on HPC) function
 def add_preds_from_json(dataset : fo.Dataset, path_to_targets: str, path_to_preds: str, box_transform, field_name=f"predictions", classes=None):
@@ -145,6 +142,14 @@ add_preds_from_json(dataset, '/home/pat/gbar_transfer/scratch/YOLOX/YOLOX_output
                         '/home/pat/gbar_transfer/scratch/YOLOX/YOLOX_outputs/yolox_l_rumexweeds_rumexsingleclass/cocoresults.json', yolox_transform, field_name="predictions_yolox_l_rumexweeds_single")
 add_preds_from_json(dataset, '/home/pat/gbar_transfer/scratch/YOLOX/YOLOX_outputs/yolox_s_rumexweeds_rumexsingleclass/coco.json',
                         '/home/pat/gbar_transfer/scratch/YOLOX/YOLOX_outputs/yolox_s_rumexweeds_rumexsingleclass/cocoresults.json', yolox_transform, field_name="predictions_yolox_s_rumexweeds_single")
+
+#%% Add predictions trained on single rumex class with mosaic and aligned hyperparameters
+add_preds_from_json(dataset, '/home/pat/gbar_transfer/scratch/YOLOX/YOLOX_outputs/yolox_DarkNet53_rumexweeds_rumexsingleclass_with_mosaic/coco.json',
+                        '/home/pat/gbar_transfer/scratch/YOLOX/YOLOX_outputs/yolox_DarkNet53_rumexweeds_rumexsingleclass_with_mosaic/cocoresults.json', yolox_transform, field_name="predictions_yolox_DarkNet53_rumexweeds_mosaic_single")
+add_preds_from_json(dataset, '/home/pat/gbar_transfer/scratch/YOLOX/YOLOX_outputs/yolox_l_rumexweeds_rumexsingleclass_with_mosaic/coco.json',
+                        '/home/pat/gbar_transfer/scratch/YOLOX/YOLOX_outputs/yolox_l_rumexweeds_rumexsingleclass_with_mosaic/cocoresults.json', yolox_transform, field_name="predictions_yolox_l_rumexweeds_mosaic_single")
+# add_preds_from_json(dataset, '/home/pat/gbar_transfer/scratch/YOLOX/YOLOX_outputs/yolox_s_rumexweeds_rumexsingleclass_with_mosaic/coco.json',
+#                         '/home/pat/gbar_transfer/scratch/YOLOX/YOLOX_outputs/yolox_s_rumexweeds_rumexsingleclass_with_mosaic/cocoresults.json', yolox_transform, field_name="predictions_yolox_s_rumexweeds_mosaic_single")
 
 #%%Detectron results
 def make_relative_path(detectron_image_path, dataset_dir):

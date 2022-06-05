@@ -87,53 +87,89 @@ def add_preds_from_json(dataset : fo.Dataset, path_to_preds: str, field_name=f"p
     """
     #Load the predictions
     with open(path_to_preds, 'r') as f:
-        preds = json.load(f)
+        preds = np.asarray(json.load(f))
         if classes is None:
             classes = [x["name"] for x in preds["categories"]]
+        id_list = np.asarray([pred["image_id"] for pred in preds])
 
+
+    #Prediction based loop. Is rather inefficient because it uses much I/O when copying/extending stuff
     with fo.ProgressBar() as pb:
-        for pred in pb(preds):
+        for sample in pb(dataset):
 
-            image_id = pred["image_id"]
+            #We have an image_id, now look for the predictions in the dict
+            image_id = sample.filename.replace('.png', '')
+            sample_predictions = preds[np.argwhere(id_list == image_id)]
 
-            #Retrieve image metadata
-            #Load image from dataset
-            sample_location = image_id.split('_')[0] + '_'+ image_id.split('_')[1]
-            sequence_num = 'seq' + image_id.split('_')[-2]
-            sample = dataset[os.path.abspath(os.path.join(dataset_top_dir, sample_location, sequence_num, 'imgs', image_id)) + '.png']
+            if sample_predictions.shape[0] > 0:
+                detections = []
+                for pred in sample_predictions.flatten():
+                    #Load the predicted image bbox
+                    bbox = pred["bbox"]
+                    bbox_orig = copy.deepcopy(bbox)
+
+                    assert (np.asarray(bbox) >= 0.0).all(), f"Something has gone wrong, original bbox: {bbox}"
+
+                    #Normalize
+                    bbox[0] /= sample["metadata"]["width"]
+                    bbox[1] /= sample["metadata"]["height"]
+                    bbox[2] /=  sample["metadata"]["width"]
+                    bbox[3] /= sample["metadata"]["height"]
+
+                    assert (np.asarray(bbox) >= 0.0).all(), f"Something has gone wrong, original bbox: {bbox_orig}"
             
-            #Load the predicted image bbox
-            bbox = pred["bbox"]
-            bbox_orig = copy.deepcopy(bbox)
+                    #Class label, to be looked up
+                    label = pred["category_id"]
+                    detections.append(fo.Detection(label=classes[label], bounding_box=bbox, confidence=(pred["score"]*score_multiplicator if "score" in pred else None)))
+                
+                sample[field_name] = fo.Detections(detections=detections)
+                sample.save()
 
-            assert (np.asarray(bbox) >= 0.0).all(), f"Something has gone wrong, original bbox: {bbox}"
 
-            #Normalize
-            bbox[0] /= sample["metadata"]["width"]
-            bbox[1] /= sample["metadata"]["height"]
-            bbox[2] /=  sample["metadata"]["width"]
-            bbox[3] /= sample["metadata"]["height"]
+    
+    # #TODO transform this into sample based loop
+    # with fo.ProgressBar() as pb:
+    #     for pred in pb(preds):
 
-            assert (np.asarray(bbox) >= 0.0).all(), f"Something has gone wrong, original bbox: {bbox_orig}"
+    #         image_id = pred["image_id"]
+
+    #         #Retrieve image metadata
+    #         #Load image from dataset
+    #         sample_location = image_id.split('_')[0] + '_'+ image_id.split('_')[1]
+    #         sequence_num = 'seq' + image_id.split('_')[-2]
+    #         sample = dataset[os.path.abspath(os.path.join(dataset_top_dir, sample_location, sequence_num, 'imgs', image_id)) + '.png']
+            
+    #         #Load the predicted image bbox
+    #         bbox = pred["bbox"]
+    #         bbox_orig = copy.deepcopy(bbox)
+
+    #         assert (np.asarray(bbox) >= 0.0).all(), f"Something has gone wrong, original bbox: {bbox}"
+
+    #         #Normalize
+    #         bbox[0] /= sample["metadata"]["width"]
+    #         bbox[1] /= sample["metadata"]["height"]
+    #         bbox[2] /=  sample["metadata"]["width"]
+    #         bbox[3] /= sample["metadata"]["height"]
+
+    #         assert (np.asarray(bbox) >= 0.0).all(), f"Something has gone wrong, original bbox: {bbox_orig}"
        
 
-            label = pred["category_id"]
+    #         label = pred["category_id"]
 
-            if sample.has_field(field_name):
-                if sample[field_name] is None:
-                    sample[field_name] = fo.Detections()
-                else:
-                    detections = copy.deepcopy(sample[field_name]["detections"])
-                    detections.append(fo.Detection(label=classes[label], bounding_box=bbox, confidence=(pred["score"]*score_multiplicator if "score" in pred else None)))
-                    sample[field_name] = fo.Detections(detections=detections)
-            else:
-                sample[field_name] = fo.Detections()
-            sample.save()
+    #         if sample.has_field(field_name):
+    #             if sample[field_name] is None:
+    #                 sample[field_name] = fo.Detections()
+    #             else:
+    #                 detections = copy.deepcopy(sample[field_name]["detections"])
+    #                 detections.append(fo.Detection(label=classes[label], bounding_box=bbox, confidence=(pred["score"]*score_multiplicator if "score" in pred else None)))
+    #                 sample[field_name] = fo.Detections(detections=detections)
+    #         else:
+    #             sample[field_name] = fo.Detections()
+    #         sample.save()
 
 #%% Add val predictions
-# SCORE HAS TO BE MULTIPLIED by 100!
-add_preds_from_json(dataset, '/home/pat/galirumi-dtu-transfer/yolov5/runs/val/exp/best_predictions.json', field_name="predictions_yolov5_l_single", classes=["rumex"], score_multiplicator=100)
-add_preds_from_json(dataset, '/home/pat/galirumi-dtu-transfer/yolov5/runs/test/exp/best_predictions.json', field_name="predictions_yolov5_l_single", classes=["rumex"], score_multiplicator=100)
+add_preds_from_json(dataset, '/home/pat/galirumi-dtu-transfer/yolov5/runs/val/exp/best_predictions.json', field_name="predictions_yolov5_l_single", classes=["rumex"], score_multiplicator=1.0)
+add_preds_from_json(dataset, '/home/pat/galirumi-dtu-transfer/yolov5/runs/test/exp/best_predictions.json', field_name="predictions_yolov5_l_single", classes=["rumex"], score_multiplicator=1.0)
 
 
 

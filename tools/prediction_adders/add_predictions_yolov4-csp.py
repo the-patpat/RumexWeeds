@@ -34,6 +34,6 @@ with fo.ProgressBar() as pb:
                         )
 
                 # Save predictions to dataset
-                sample["predictions_yolov4_csp_singleclass"] = fo.Detections(detections=detections)
+                sample["predictions_yolov4_csp_single"] = fo.Detections(detections=detections)
                 sample.save()
         
