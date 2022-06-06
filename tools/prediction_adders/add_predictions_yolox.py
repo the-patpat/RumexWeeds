@@ -4,6 +4,7 @@ import json
 import os
 import copy
 from fiftyone import ViewExpression as F
+import numpy as np
 
 
 dataset = fo.load_dataset('RumexWeeds')
@@ -32,6 +33,7 @@ def add_preds_from_json(dataset : fo.Dataset, path_to_targets: str, path_to_pred
     #Load the ground truth that also contains the image id link
     with open(path_to_targets, 'r') as f:
         targets = json.load(f)
+        id_filename_list = np.asarray([(target["id"], target["file_name"]) for target in targets["images"]])
         if classes is None:
             classes = [x["name"] for x in targets["categories"]]
 
@@ -40,48 +42,88 @@ def add_preds_from_json(dataset : fo.Dataset, path_to_targets: str, path_to_pred
 
     #Load the predictions
     with open(path_to_preds, 'r') as f:
-        preds = json.load(f)
+        preds = np.asarray(json.load(f))
+        id_pred_list = np.asarray([int(pred["image_id"]) for pred in preds])  
+
     
+    #Sample based loop (more efficient)
     with fo.ProgressBar() as pb:
-        for pred in pb(preds):
-
-            image_id = int(pred["image_id"])
-
-            img_data = targets["images"][image_id - index_offset]
-
-            #Check for equality
-            assert int(img_data["id"]) == image_id, "IDs do not match"
-
-            #Retrieve image metadata
-            #Load image from dataset
-            if "seq" not in img_data["file_name"]:
-                filename_split = img_data["file_name"].split('_')
-                location = '_'.join(filename_split[0:2])
-                sequence = 'seq' + filename_split[3]
-                sample = dataset[os.path.abspath(os.path.join(dataset_top_dir, location, sequence, 'imgs', img_data["file_name"]))]
-            else:
-                sample = dataset[os.path.abspath(os.path.join(dataset_top_dir, img_data["file_name"]))]
+        for sample in pb(dataset):
             
-            #Load the predicted image bbox
-            bbox = pred["bbox"]
+            #First, get the corresponding numerical id corresponding to the filepath of the sample
+            ind_id_file = np.argwhere(id_filename_list[:, 1] == '/'.join(sample["filepath"].split('/')[8:]) )
+            
+            #Extract the numerical ID if match is found
+            if ind_id_file.shape[0] > 0:
+                
+                num_id = int(id_filename_list[ind_id_file, 0])
+                
+                #Retrieve the predictions
+                sample_preds = preds[id_pred_list == num_id]
+                
+                detections = []
+                
+                for pred in sample_preds:
+                    #Load the predicted image bbox
+                    bbox = pred["bbox"]
 
-            #Get the scaling factor (from ronjas code)
-            s_w, s_h = img_data["width"]/sample["metadata"]["width"], img_data["height"]/sample["metadata"]["height"]
+                    #Get the scaling factor (from ronjas code)
+                    img_data = targets["images"][num_id - index_offset]
+                    assert int(img_data["id"]) == num_id, "ID mismatch"
+                    s_w, s_h = img_data["width"]/sample["metadata"]["width"], img_data["height"]/sample["metadata"]["height"]
 
-            bbox = box_transform(bbox, (s_w, s_h), (sample["metadata"]["width"], sample["metadata"]["height"]))
-             
-            label = pred["category_id"]
+                    bbox = box_transform(bbox, (s_w, s_h), (sample["metadata"]["width"], sample["metadata"]["height"]))
+                    
+                    label = pred["category_id"]
 
-            if sample.has_field(field_name):
-                if sample[field_name] is None:
-                    sample[field_name] = fo.Detections()
-                else:
-                    detections = copy.deepcopy(sample[field_name]["detections"])
                     detections.append(fo.Detection(label=classes[label], bounding_box=bbox, confidence=(pred["score"] if "score" in pred else None)))
-                    sample[field_name] = fo.Detections(detections=detections)
-            else:
-                sample[field_name] = fo.Detections()
+                
+                sample[field_name] = fo.Detections(detections=detections)
+            
             sample.save()
+
+
+
+    # with fo.ProgressBar() as pb:
+    #     for pred in pb(preds):
+
+    #         image_id = int(pred["image_id"])
+
+    #         img_data = targets["images"][image_id - index_offset]
+
+    #         #Check for equality
+    #         assert int(img_data["id"]) == image_id, "IDs do not match"
+
+    #         #Retrieve image metadata
+    #         #Load image from dataset
+    #         if "seq" not in img_data["file_name"]:
+    #             filename_split = img_data["file_name"].split('_')
+    #             location = '_'.join(filename_split[0:2])
+    #             sequence = 'seq' + filename_split[3]
+    #             sample = dataset[os.path.abspath(os.path.join(dataset_top_dir, location, sequence, 'imgs', img_data["file_name"]))]
+    #         else:
+    #             sample = dataset[os.path.abspath(os.path.join(dataset_top_dir, img_data["file_name"]))]
+            
+    #         #Load the predicted image bbox
+    #         bbox = pred["bbox"]
+
+    #         #Get the scaling factor (from ronjas code)
+    #         s_w, s_h = img_data["width"]/sample["metadata"]["width"], img_data["height"]/sample["metadata"]["height"]
+
+    #         bbox = box_transform(bbox, (s_w, s_h), (sample["metadata"]["width"], sample["metadata"]["height"]))
+             
+    #         label = pred["category_id"]
+
+    #         if sample.has_field(field_name):
+    #             if sample[field_name] is None:
+    #                 sample[field_name] = fo.Detections()
+    #             else:
+    #                 detections = copy.deepcopy(sample[field_name]["detections"])
+    #                 detections.append(fo.Detection(label=classes[label], bounding_box=bbox, confidence=(pred["score"] if "score" in pred else None)))
+    #                 sample[field_name] = fo.Detections(detections=detections)
+    #         else:
+    #             sample[field_name] = fo.Detections()
+    #         sample.save()
 
 def yolox_transform(box, scaling, img_dims):
     """ Transforms a bbox from the YOLOx framework to target FiftyOne format
@@ -148,8 +190,8 @@ add_preds_from_json(dataset, '/home/pat/gbar_transfer/scratch/YOLOX/YOLOX_output
                         '/home/pat/gbar_transfer/scratch/YOLOX/YOLOX_outputs/yolox_DarkNet53_rumexweeds_rumexsingleclass_with_mosaic/cocoresults.json', yolox_transform, field_name="predictions_yolox_DarkNet53_rumexweeds_mosaic_single")
 add_preds_from_json(dataset, '/home/pat/gbar_transfer/scratch/YOLOX/YOLOX_outputs/yolox_l_rumexweeds_rumexsingleclass_with_mosaic/coco.json',
                         '/home/pat/gbar_transfer/scratch/YOLOX/YOLOX_outputs/yolox_l_rumexweeds_rumexsingleclass_with_mosaic/cocoresults.json', yolox_transform, field_name="predictions_yolox_l_rumexweeds_mosaic_single")
-# add_preds_from_json(dataset, '/home/pat/gbar_transfer/scratch/YOLOX/YOLOX_outputs/yolox_s_rumexweeds_rumexsingleclass_with_mosaic/coco.json',
-#                         '/home/pat/gbar_transfer/scratch/YOLOX/YOLOX_outputs/yolox_s_rumexweeds_rumexsingleclass_with_mosaic/cocoresults.json', yolox_transform, field_name="predictions_yolox_s_rumexweeds_mosaic_single")
+add_preds_from_json(dataset, '/home/pat/gbar_transfer/scratch/YOLOX/YOLOX_outputs/yolox_s_rumexweeds_rumexsingleclass_with_mosaic/coco.json',
+                        '/home/pat/gbar_transfer/scratch/YOLOX/YOLOX_outputs/yolox_s_rumexweeds_rumexsingleclass_with_mosaic/cocoresults.json', yolox_transform, field_name="predictions_yolox_s_rumexweeds_mosaic_single")
 
 #%%Detectron results
 def make_relative_path(detectron_image_path, dataset_dir):
