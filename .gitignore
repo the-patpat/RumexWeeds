@@ -1,5 +1,6 @@
 tools/catkin_ws/devel/
 tools/catkin_ws/build/
 tools/catkin_ws/install
+tools/json_prediction_files/*
 **.cmake
 **.make
