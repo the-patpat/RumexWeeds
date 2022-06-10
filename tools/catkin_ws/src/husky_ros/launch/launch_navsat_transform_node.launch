@@ -1,0 +1,17 @@
+<launch>
+
+  <arg name="node_start_delay" default="10.0"/>  
+
+  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform_node" respawn="true" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' ">
+
+    <param name="magnetic_declination_radians" value="0"/>
+
+    <param name="yaw_offset" value="0"/>
+
+    <remap from="/imu/data" to="/imu_msg" />
+    <remap from="/gps/fix" to="/gps_msg" />
+    <remap from="/odometry/filtered" to="/odo_msg" />
+
+  </node>
+
+</launch>
