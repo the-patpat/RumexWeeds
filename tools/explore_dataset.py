@@ -86,6 +86,24 @@ with fo.ProgressBar() as pb:
                 print(f"Added GPS info to sample {filename}: {sample['location']}\r", end="")
                 sample.save()
                 f.close()
+        if 'imu' not in sample.field_names or sample['imu'] is None:
+            filepath, filename = os.path.split(sample.filepath)
+            filename = os.path.splitext(filename)[0]
+            with open(filepath + '/../imu.json', 'r') as f:
+                gps_dict = json.load(f)
+                gps_data = gps_dict[filename.replace('_rgb', '')]
+                sample['imu'] = gps_data 
+                sample.save()
+                f.close()
+        if 'odom' not in sample.field_names or sample['odom'] is None:
+            filepath, filename = os.path.split(sample.filepath)
+            filename = os.path.splitext(filename)[0]
+            with open(filepath + '/../odom.json', 'r') as f:
+                gps_dict = json.load(f)
+                gps_data = gps_dict[filename.replace('_rgb', '')]
+                sample['odom'] = gps_data 
+                sample.save()
+                f.close()
         for split in d_split:
             if os.path.abspath(sample.filepath) in d_split[split]:
                 sample.tags.append(split)
@@ -204,8 +222,11 @@ bb_hist = fo.NumericalHistogram(F('ground_truth_detections.detections[]').apply(
 bb_hist.show()
 #%% Area histogram
 bb_area_hist = fo.NumericalHistogram(F('ground_truth_detections.detections[]').apply(F('bounding_box')[2] * F('bounding_box')[3]), init_view=dataset)
+<<<<<<< Updated upstream
 session.plots.attach(bb_area_hist)
+=======
 #session.plots.attach(bb_area_hist)
+>>>>>>> Stashed changes
 bb_area_hist.show()
 
 #%%BB dimension clustering
