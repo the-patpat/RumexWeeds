@@ -71,22 +71,26 @@ else:
     if not dataset.persistent:
         dataset.persistent = True
 
+session = fo.Session(dataset=dataset, auto=False)
+
 #%% Load GPS data, train/test/val category 
-for sample in dataset:
-    if 'location' not in sample.field_names or sample['location'] is None:
-        filepath, filename = os.path.split(sample.filepath)
-        filename = os.path.splitext(filename)[0]
-        with open(filepath + '/../gps.json', 'r') as f:
-            gps_dict = json.load(f)
-            gps_data = gps_dict[filename.replace('_rgb', '')]
-            sample['location'] = fo.GeoLocation(point=[gps_data['longitude'], gps_data['latitude']])
-            print(f"Added GPS info to sample {filename}: {sample['location']}\r", end="")
-            sample.save()
-            f.close()
-    for split in d_split:
-        if os.path.abspath(sample.filepath) in d_split[split]:
-            sample.tags.append(split)
-            sample.save()
+with fo.ProgressBar() as pb:
+    for sample in pb(dataset):
+        if 'location' not in sample.field_names or sample['location'] is None:
+            filepath, filename = os.path.split(sample.filepath)
+            filename = os.path.splitext(filename)[0]
+            with open(filepath + '/../gps.json', 'r') as f:
+                gps_dict = json.load(f)
+                gps_data = gps_dict[filename.replace('_rgb', '')]
+                sample['location'] = fo.GeoLocation(point=[gps_data['longitude'], gps_data['latitude']])
+                print(f"Added GPS info to sample {filename}: {sample['location']}\r", end="")
+                sample.save()
+                f.close()
+        for split in d_split:
+            if os.path.abspath(sample.filepath) in d_split[split]:
+                sample.tags.append(split)
+                sample.tags = list(set(sample.tags))
+                sample.save()
     
 #%% Launch the app 
 session = fo.launch_app(dataset, auto=False)
@@ -201,6 +205,7 @@ bb_hist.show()
 #%% Area histogram
 bb_area_hist = fo.NumericalHistogram(F('ground_truth_detections.detections[]').apply(F('bounding_box')[2] * F('bounding_box')[3]), init_view=dataset)
 session.plots.attach(bb_area_hist)
+#session.plots.attach(bb_area_hist)
 bb_area_hist.show()
 
 #%%BB dimension clustering
@@ -215,26 +220,30 @@ import matplotlib.pyplot as plt
 
 bb_width_height = np.asarray(dataset.values(F('ground_truth_detections.detections[]').apply(F('bounding_box'))[2:4]))
 print(bb_width_height.shape)
-km = KMeans(n_clusters=5, random_state=0)
+km = KMeans(n_clusters=9, random_state=0)
 
 km.fit(bb_width_height)
 fig, ax = plt.subplots(1)
-ax.set_ylim(0, 1200)
-ax.set_xlim(0, 1920)
+#ax.set_ylim(0, 1200)
+#ax.set_xlim(0, 1920)
+ax.set_ylim(0, 1.8)
+ax.set_xlim(0, 1.8)
 ax.invert_yaxis()
 #ax.scatter(km.cluster_centers_[:, 0], km.cluster_centers_[:, 1])
 
 #Get bb top left/right
 bb_top_left_corner = np.asarray(dataset.values(F('ground_truth_detections.detections[]').apply(F('bounding_box'))[0:2]))
 print(bb_width_height.shape)
-km_corner = KMeans(n_clusters=5, random_state=0)
+km_corner = KMeans(n_clusters=9, random_state=0)
 
 km_corner.fit(bb_top_left_corner)
-ax.scatter(km_corner.cluster_centers_[:, 0]*1920, km_corner.cluster_centers_[:, 1]*1200)
+# ax.scatter(km_corner.cluster_centers_[:, 0]*1920, km_corner.cluster_centers_[:, 1]*1200)
+ax.scatter(km_corner.cluster_centers_[:, 0], km_corner.cluster_centers_[:, 1])
 
 for dimension, anchor in zip(km.cluster_centers_, km_corner.cluster_centers_):
-    ax.add_collection(PatchCollection([Rectangle((anchor[0]*1920, anchor[1]*1200), dimension[0]*1920, dimension[1]*1200)], alpha=0.2))
-ax.set_title("Anchor Boxes on RumexWeeds")
+    # ax.add_collection(PatchCollection([Rectangle((anchor[0]*1920, anchor[1]*1200), dimension[0]*1920, dimension[1]*1200)], alpha=0.2))
+    ax.add_collection(PatchCollection([Rectangle((anchor[0], anchor[1]), dimension[0], dimension[1])], alpha=0.2))
+ax.set_title("K-means clustered (n_clusters=9) bounding boxes on RumexWeeds")
 
 #%% Get YOLOv5 tags (export the dataset in YOLO format) (single class)
 
