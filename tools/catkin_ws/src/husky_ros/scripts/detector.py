@@ -6,35 +6,46 @@ from vision_msgs.msg import Detection2DArray, Detection2D, ObjectHypothesisWithP
 from geometry_msgs.msg import Pose2D
 
 import sys
-sys.path.insert(0, "/home/pat/")
-sys.path.insert(0, "/home/pat/yolor")
+sys.path.insert(0, "/home/pat/scratch")
+sys.path.insert(0, "/home/pat/scratch/yolor")
 from yolor.models.models import *
 from yolor.utils.general import non_max_suppression, xyxy2xywh
-
+from yolor.utils.datasets import letterbox
+from yolor.utils.plots import plot_one_box
+import numpy as np
 import torch
+from copy import deepcopy
 
 from cv_bridge import CvBridge
 
 class DetectorNode:
     def __init__(self):
+        print("Initializeing node")
         rospy.init_node("yolor_detector")
+        print("initialized node")
         rospy.loginfo("Starting DetectorNode.")
-        
         # Load model
         rospy.loginfo("Loading YOLOR model")
-        self.model = Darknet('/home/pat/yolor/cfg/yolor_csp_rumex.cfg', (640, 640)).cuda()
-        self.model.load_state_dict(torch.load('/home/pat/yolor/runs/train/yolor_csp5/weights/best_ap.pt', map_location='cpu')['model'])
+        self.model = Darknet('/home/pat/scratch/yolor/cfg/yolor_csp_rumex.cfg', (640, 640)).cuda()
+        self.model.load_state_dict(torch.load('/home/pat/scratch/yolor/runs/train/yolor_csp5/weights/best_ap.pt', map_location='cpu')['model'])
         self.model.to('cuda').eval()
+        self.model.training = False
         self.model.half()  # to FP16
         self.model(torch.zeros((1,3,640,640), device='cuda').half())
         rospy.loginfo("Loaded YOLOR model")
         self.subscriber = rospy.Subscriber("image", Image, self.handle_image, queue_size=10)
         self.publisher = rospy.Publisher("detections", Detection2DArray, queue_size=10)
+        self.vis_publisher = rospy.Publisher("visual_detections", Image, queue_size=10)
         self.bridge = CvBridge()
         rospy.loginfo("Initialization finished. Starting to listen....")
 
     def handle_image(self, data):
         img = self.bridge.imgmsg_to_cv2(data)
+        im0 = deepcopy(img)
+
+        img = letterbox(img, new_shape=(640,640))[0]
+        rospy.loginfo(f"letterbox return np array with shape {img.shape}")
+        img = np.ascontiguousarray(img[:, :, ::-1]) #BGR to RGB
         rospy.loginfo("Moving to GPU")
         img = torch.from_numpy(img).to('cuda')
         rospy.loginfo("Moved to GPU")
@@ -44,25 +55,34 @@ class DetectorNode:
             img = img.unsqueeze(0)
 
         img = torch.permute(img, (0,3,1,2))
-        pred = self.model(img, augment=False)[0]
+        with torch.no_grad():
+            rospy.loginfo(f"Passing tensor of size {img.shape} and dtype {img.dtype} to model")
+            pred = self.model(img, augment=False)[0]
 
-        pred = non_max_suppression(pred, 0.2, 0.5, classes=["rumex"], agnostic=False)
+        #classes=[0] -> rumex single class, id=0. [0] at the end: batch_size=1, and nms output is list with batch_size elements (nx6 tensors)
+        pred = non_max_suppression(pred, 0.2, 0.5, classes=[0], agnostic=False)[0]
 
         #Pred shape is (batch, detections, 6(x1,y1,x2,y2,conf,cls))
-        pred = pred.squeeze(0)
         detections = []
         msg = Detection2DArray(detections=[])
         for p in pred:
             obj_hyp = ObjectHypothesisWithPose(id=0, score=p[-2])
-            (xc,yc,w,h) = xyxy2xywh(p[0:4])
-            xc *= 640
-            yc *= 640
-            w *= 640
-            h *= 640
+            p[:4] = scale_coords(img.shape[2:], p[:4].unsqueeze(0), im0.shape).round().squeeze(0)
+            (xc,yc,w,h) = xyxy2xywh(p[0:4].unsqueeze(0)).squeeze(0)
+            # xc *= 640
+            # yc *= 640
+            # w *= 640
+            # h *= 640
             bbox = BoundingBox2D(center=Pose2D(x=xc, y=yc), size_x=w, size_y=h)
-            msg.detections.append(Detection2D(bbox=bbox, results=[obj_hyp], source_img=data))
+            # Rescale boxes from img_size to im0 size
+            msg.detections.append(Detection2D(bbox=bbox, results=[obj_hyp], source_img=deepcopy(im0)))
+            
+            plot_one_box(p[:4], im0, label="rumex: %.2f" % p[-2], color=(255,0,0), line_thickness=3)
+
+            
         
         self.publisher.publish(msg)
+        self.vis_publisher.publish(self.bridge.cv2_to_imgmsg(im0))
             
 
 if __name__ == "__main__":
