@@ -26,22 +26,24 @@ class DetectorNode:
         self.model.load_state_dict(torch.load('/home/pat/yolor/runs/train/yolor_csp5/weights/best_ap.pt', map_location='cpu')['model'])
         self.model.to('cuda').eval()
         self.model.half()  # to FP16
-        self.model(torch.zeros((1,3,640,640), device='cuda'))
+        self.model(torch.zeros((1,3,640,640), device='cuda').half())
         rospy.loginfo("Loaded YOLOR model")
         self.subscriber = rospy.Subscriber("image", Image, self.handle_image, queue_size=10)
         self.publisher = rospy.Publisher("detections", Detection2DArray, queue_size=10)
-        
-
         self.bridge = CvBridge()
+        rospy.loginfo("Initialization finished. Starting to listen....")
 
     def handle_image(self, data):
         img = self.bridge.imgmsg_to_cv2(data)
+        rospy.loginfo("Moving to GPU")
         img = torch.from_numpy(img).to('cuda')
+        rospy.loginfo("Moved to GPU")
         img = img.half() 
         img /= 255.0  # 0 - 255 to 0.0 - 1.0
         if img.ndimension() == 3:
             img = img.unsqueeze(0)
 
+        img = torch.permute(img, (0,3,1,2))
         pred = self.model(img, augment=False)[0]
 
         pred = non_max_suppression(pred, 0.2, 0.5, classes=["rumex"], agnostic=False)
