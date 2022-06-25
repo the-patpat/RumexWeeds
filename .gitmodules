@@ -7,3 +7,7 @@
 [submodule "tools/catkin_ws/src/vision_opencv"]
 	path = tools/catkin_ws/src/vision_opencv
 	url = https://github.com/ros-perception/vision_opencv.git
+[submodule "tools/catkin_ws/src/graph_rviz_plugin"]
+	path = tools/catkin_ws/src/graph_rviz_plugin
+	url = git@github.com:the-patpat/graph_rviz_plugin.git
+	branch = feature/scatter
