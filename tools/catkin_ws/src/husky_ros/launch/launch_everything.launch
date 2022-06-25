@@ -6,6 +6,7 @@
     <arg name="seq_dir" default=""/>
     <param name="seq_dir" value="$(arg seq_dir)"/>
     <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find husky_ros)/rviz.rviz"/>
+    <node name="detector" pkg="husky_ros" type="detector.py" output="screen"/>
     
     <!--rqt debugging tools-->
     <group if="$(arg debug)">

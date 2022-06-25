@@ -1,0 +1,6 @@
+/home/pat/onedrive/Thesis/Experiments/RumexWeeds/tools/catkin_ws/src/husky_ros/scripts/tf_publisher.py: line 1: import: command not found
+/home/pat/onedrive/Thesis/Experiments/RumexWeeds/tools/catkin_ws/src/husky_ros/scripts/tf_publisher.py: line 2: import: command not found
+/home/pat/onedrive/Thesis/Experiments/RumexWeeds/tools/catkin_ws/src/husky_ros/scripts/tf_publisher.py: line 3: import: command not found
+/home/pat/onedrive/Thesis/Experiments/RumexWeeds/tools/catkin_ws/src/husky_ros/scripts/tf_publisher.py: line 4: from: command not found
+/home/pat/onedrive/Thesis/Experiments/RumexWeeds/tools/catkin_ws/src/husky_ros/scripts/tf_publisher.py: line 7: syntax error near unexpected token `('
+/home/pat/onedrive/Thesis/Experiments/RumexWeeds/tools/catkin_ws/src/husky_ros/scripts/tf_publisher.py: line 7: `def send_transform(br, tf_dict, dict_key, child, parent):'
