@@ -1,6 +1,3 @@
-[submodule "catkin_ws/src/graph_rviz_plugin"]
-	path = catkin_ws/src/graph_rviz_plugin
-	url = https://github.com/the-patpat/graph_rviz_plugin.git
 [submodule "tools/catkin_ws/src/nmea_navsat_driver"]
 	path = tools/catkin_ws/src/nmea_navsat_driver
 	url = https://github.com/ros-drivers/nmea_navsat_driver.git
