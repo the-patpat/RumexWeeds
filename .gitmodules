@@ -1,3 +1,0 @@
-[submodule "tools/tools/catkin_ws/src/graph_rviz_plugin"]
-	path = tools/tools/catkin_ws/src/graph_rviz_plugin
-	url = https://github.com/the-patpat/graph_rviz_plugin.git
