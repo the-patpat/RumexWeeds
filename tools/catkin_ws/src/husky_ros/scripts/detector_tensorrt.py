@@ -40,17 +40,21 @@ class DetectorNode:
         self.inference_time_publisher = rospy.Publisher("inference_time", Float32, queue_size=10)
         self.vis_publisher = rospy.Publisher("visual_detections", Image, queue_size=10)
         self.bridge = CvBridge()
+
+        self.half = rospy.get_param('half_precision')
+        self.inference_dtype = np.float16 if self.half else np.float32
+        if self.half: rospy.loginfo("Using half precision")
         
         #Initialize tensorrt
         cuda.init()
         self.device = cuda.Device(0)
         self.__context = self.device.make_context()
         self._runtime = trt.Runtime(trt.Logger(trt.Logger.WARNING)) 
-        self._trt_file = open("/home/galirumi/best_ap.trt", "rb")
+        self._trt_file = open("/home/galirumi/best_ap_fp16.trt" if self.half else "/home/galirumi/best_ap.trt", "rb")
         self._engine = self._runtime.deserialize_cuda_engine(self._trt_file.read())
         self._context = self._engine.create_execution_context()
-        self.input_batch = np.zeros((1,3,640,640), dtype=np.float32)
-        self.output = np.zeros((1,25200,6), dtype=np.float32) #might need to be reinitialized when used in another thread
+        self.input_batch = np.zeros((1,3,640,640), dtype=self.inference_dtype)
+        self.output = np.zeros((1,25200,6), dtype=self.inference_dtype) #might need to be reinitialized when used in another thread
         self._d_input = cuda.mem_alloc(1 * self.input_batch.nbytes)
         self._d_output = cuda.mem_alloc(1 * self.output.nbytes)
         self._bindings = [int(self._d_input), int(self._d_output)]
@@ -96,7 +100,7 @@ class DetectorNode:
         # else:
             # pop_thread = False
 
-        self.output = np.zeros((1,25200,6), dtype=np.float32) #might need to be reinitialized when used in another thread
+        self.output = np.zeros((1,25200,6), dtype=self.inference_dtype) #might need to be reinitialized when used in another thread
 
         rospy.loginfo("Allocating memory")
         self._d_input = cuda.mem_alloc(1 * self.input_batch.nbytes)
@@ -136,7 +140,7 @@ class DetectorNode:
         img = letterbox(img, new_shape=(640,640), auto=False)[0]
         rospy.loginfo(f"letterbox return np array with shape {img.shape}")
         img = np.ascontiguousarray(img[:, :, ::-1]) #BGR to RGB
-        img = img.astype(np.float32)
+        img = img.astype(self.inference_dtype)
         #img = torch.from_numpy(img).to('cuda')
         #img = img.half() 
 
