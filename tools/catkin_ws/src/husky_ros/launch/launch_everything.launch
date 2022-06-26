@@ -4,9 +4,16 @@
     <arg name="debug" default="false"/>
     <arg name="node_start_delay" default="10.0"/>  
     <arg name="seq_dir" default=""/>
+    <arg name="local_inference" default="true"/>
+    
     <param name="seq_dir" value="$(arg seq_dir)"/>
     <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find husky_ros)/rviz.rviz"/>
-    <node name="detector" pkg="husky_ros" type="detector.py" output="screen"/>
+    
+    <!--Local inference uses GPU on same host, otherwise inference can be done thorugh jetson-->
+    <group if="$(arg local_inference)">
+        <node name="detector" pkg="husky_ros" type="detector.py" output="screen"/>
+    </group>
+
     
     <!--rqt debugging tools-->
     <group if="$(arg debug)">
