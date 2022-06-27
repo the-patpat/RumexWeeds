@@ -63,7 +63,6 @@ class DetectorNode:
         pred = non_max_suppression(pred, 0.2, 0.5, classes=[0], agnostic=False)[0]
 
         #Pred shape is (batch, detections, 6(x1,y1,x2,y2,conf,cls))
-        detections = []
         msg = Detection2DArray(detections=[])
         for p in pred:
             obj_hyp = ObjectHypothesisWithPose(id=0, score=p[-2])
@@ -75,7 +74,7 @@ class DetectorNode:
             # h *= 640
             bbox = BoundingBox2D(center=Pose2D(x=xc, y=yc), size_x=w, size_y=h)
             # Rescale boxes from img_size to im0 size
-            msg.detections.append(Detection2D(bbox=bbox, results=[obj_hyp], source_img=deepcopy(im0)))
+            msg.detections.append(Detection2D(bbox=bbox, results=[obj_hyp], source_img=self.bridge.cv2_to_imgmsg(deepcopy(im0))))
             
             plot_one_box(p[:4], im0, label="rumex: %.2f" % p[-2], color=(255,0,0), line_thickness=3)
 

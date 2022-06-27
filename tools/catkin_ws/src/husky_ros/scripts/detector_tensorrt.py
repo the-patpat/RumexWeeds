@@ -152,7 +152,7 @@ class DetectorNode:
             (xc,yc,w,h) = xyxy2xywh(p[0:4].unsqueeze(0)).squeeze(0)
             bbox = BoundingBox2D(center=Pose2D(x=xc, y=yc), size_x=w, size_y=h)
 
-            msg.detections.append(Detection2D(bbox=bbox, results=[obj_hyp], source_img=deepcopy(im0)))
+            msg.detections.append(Detection2D(bbox=bbox, results=[obj_hyp], source_img=self.bridge.cv2_to_imgmsg(im0)))
             
             #Plot the boxes
             plot_one_box(p[:4], im0, label="rumex: %.2f" % p[-2], color=(255,0,0), line_thickness=3)
