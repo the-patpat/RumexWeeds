@@ -5,6 +5,7 @@
     <arg name="node_start_delay" default="10.0"/>  
     <arg name="seq_dir" default=""/>
     <arg name="local_inference" default="true"/>
+    <arg name="jetson_ip" default="192.168.0.141"/>
     
     <param name="seq_dir" value="$(arg seq_dir)"/>
     <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find husky_ros)/rviz.rviz"/>
@@ -12,6 +13,12 @@
     <!--Local inference uses GPU on same host, otherwise inference can be done thorugh jetson-->
     <group if="$(arg local_inference)">
         <node name="detector" pkg="husky_ros" type="detector.py" output="screen"/>
+    </group>
+    
+    <group unless="$(arg local_inference)">
+        <machine name="jetson_docker" address="$(arg jetson_ip)" ssh-port="6922" env-loader="/ros_entrypoint.sh" user="root" timeout="10.0">
+        </machine>
+        <node name="detector_jetson" machine="jetson_docker" pkg="husky_ros" type="detector_tensorrt.py" output="screen" args="_half_precision:=True"/> 
     </group>
 
     
