@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from tkinter import W
 import rospy
 import numpy as np
 import scipy as sp
