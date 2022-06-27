@@ -10,6 +10,7 @@ import torch
 
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
+from std_msgs.msg import String
 
 #from yolor/utils/general.py
 def xywh2xyxy(x):
@@ -107,20 +108,21 @@ class TrackingNode:
         self.image_pub = rospy.Publisher("sift_view", Image, queue_size=10)
         self.image_sub = rospy.Subscriber("detections", Image, self.handle_image)
         self._bridge = CvBridge() 
+        self.state = None
         self.des = None        
         self.kp = None
         self.img = None
+        self.detection_count = 0
         self.draw_params = dict(matchColor = (0,255,0),
                             singlePointColor = (255,0,0),
                             matchesMask = None,
                             flags = cv2.DrawMatchesFlags_DEFAULT)
         self.vis_match_pub = rospy.Publisher("vis_match", Image, queue_size=10)
+        self.state_pub = rospy.Publisher("tracker_state", String, queue_size=10)
         pass
     
     def handle_image(self, msg):
         
-        kp = None
-        des = None
         #Get length of detections
         if len(msg.detections) > 0 and abs(self.detection_count - len(msg.detections)) == 0 :
             #NMS + confidence thresholded detections available
@@ -170,6 +172,7 @@ class TrackingNode:
             img_match = cv2.drawMatchesKnn(self.img,self.kp,img, kp, matches, None, **self.draw_params)
             self.vis_match_pub.publish(self._bridge.cv2_to_imgmsg(img_match))
 
+        self.state_pub.publish(self.state)
 
         
 
