@@ -8,8 +8,10 @@ import torch
 
 
 from sensor_msgs.msg import Image
+from vision_msgs.msg import Detection2DArray
 from cv_bridge import CvBridge
 from std_msgs.msg import String
+from husky_ros.msg import Detection2DArrayWithImage
 
 #from yolor/utils/general.py
 def xywh2xyxy(x):
@@ -105,7 +107,7 @@ class TrackingNode:
         self.feature_tracker = cv2.SIFT_create()
         self._flann = (cv2.FlannBasedMatcher(dict(algorithm=1, trees=5), dict(checks=50)))
         self.image_pub = rospy.Publisher("sift_view", Image, queue_size=10)
-        self.image_sub = rospy.Subscriber("detections", Image, self.handle_image)
+        self.image_sub = rospy.Subscriber("detections", Detection2DArrayWithImage, self.handle_image)
         self._bridge = CvBridge() 
         self.state = None
         self.des = None        
@@ -144,12 +146,16 @@ class TrackingNode:
         
         if self.state in ["detected_new", "detected_loss", "none_detected"]:
             #Calculate features in ROIs (detected areas)
-            box_mask = np.zeros((msg.detections[0].source_img.height, msg.detections[0].source_img.width), dtype=np.uint8)
-            img = self._bridge.imgmsg_to_cv2(msg.detections[0].source_img)
+            
+            img = self._bridge.imgmsg_to_cv2(msg.source_img)
+            if self.state != "none_detected":
+                box_mask = np.zeros((msg.source_img.height, msg.source_img.width), dtype=np.uint8)
+            else:
+                box_mask = None
             for detection in msg.detections:
                 bbox = np.asarray([detection.bbox.center.x, detection.bbox.center.y,
                              detection.bbox.size_x, detection.bbox.size_y]).reshape(1,4)
-                tl_x, tl_y, br_x, br_y = np.squeeze(xywh2xyxy(bbox), axis=0)
+                tl_x, tl_y, br_x, br_y = np.squeeze(xywh2xyxy(bbox), axis=0).astype(int)
                 box_mask[tl_y:(br_y+1), tl_x:(br_x+1)] = 1
             kp, des = self.feature_tracker.detectAndCompute(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), box_mask)
             if self.state == "detected_new":

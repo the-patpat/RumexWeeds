@@ -15,6 +15,7 @@ from yolor.utils.plots import plot_one_box
 import numpy as np
 import torch
 from copy import deepcopy
+from husky_ros.msg import Detection2DArrayWithImage
 
 from cv_bridge import CvBridge
 
@@ -34,7 +35,7 @@ class DetectorNode:
         self.model(torch.zeros((1,3,640,640), device='cuda').half())
         rospy.loginfo("Loaded YOLOR model")
         self.subscriber = rospy.Subscriber("image", Image, self.handle_image, queue_size=10)
-        self.publisher = rospy.Publisher("detections", Detection2DArray, queue_size=10)
+        self.publisher = rospy.Publisher("detections", Detection2DArrayWithImage, queue_size=10)
         self.vis_publisher = rospy.Publisher("visual_detections", Image, queue_size=10)
         self.bridge = CvBridge()
         rospy.loginfo("Initialization finished. Starting to listen....")
@@ -63,7 +64,7 @@ class DetectorNode:
         pred = non_max_suppression(pred, 0.2, 0.5, classes=[0], agnostic=False)[0]
 
         #Pred shape is (batch, detections, 6(x1,y1,x2,y2,conf,cls))
-        msg = Detection2DArray(detections=[])
+        msg = Detection2DArrayWithImage(detections=[])
         for p in pred:
             obj_hyp = ObjectHypothesisWithPose(id=0, score=p[-2])
             p[:4] = scale_coords(img.shape[2:], p[:4].unsqueeze(0), im0.shape).round().squeeze(0)
@@ -77,6 +78,9 @@ class DetectorNode:
             msg.detections.append(Detection2D(bbox=bbox, results=[obj_hyp], source_img=self.bridge.cv2_to_imgmsg(deepcopy(im0))))
             
             plot_one_box(p[:4], im0, label="rumex: %.2f" % p[-2], color=(255,0,0), line_thickness=3)
+        msg.source_img = self.bridge.cv2_to_imgmsg(deepcopy(im0))
+        
+
 
             
         
