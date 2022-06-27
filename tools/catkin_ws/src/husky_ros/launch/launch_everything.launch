@@ -6,9 +6,12 @@
     <arg name="seq_dir" default=""/>
     <arg name="local_inference" default="true"/>
     <arg name="jetson_ip" default="192.168.0.141"/>
-    
+    <arg name="gui" default ="true"/> 
     <param name="seq_dir" value="$(arg seq_dir)"/>
-    <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find husky_ros)/rviz.rviz"/>
+
+    <group if="$(arg gui)">
+	<node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find husky_ros)/rviz.rviz"/>
+    </group>
     
     <!--Local inference uses GPU on same host, otherwise inference can be done thorugh jetson-->
     <group if="$(arg local_inference)">
