@@ -8,7 +8,7 @@
 
     <param name="yaw_offset" value="0"/>
 
-    <remap from="/imu/data" to="/imu_msg" />
+    <remap from="/imu/data" to="/imu_enu/data" />
     <remap from="/gps/fix" to="/gps_msg" />
     <remap from="/odometry/filtered" to="/odo_msg" />
 
