@@ -57,7 +57,7 @@ def talker(seq_dir):
                                 covariance=dict_message["pose"]["covariance"])
         br.sendTransform([pose.pose.position.x, pose.pose.position.y,pose.pose.position.z],
                         [pose.pose.orientation.x, pose.pose.orientation.y,pose.pose.orientation.z,pose.pose.orientation.w],
-                        rospy.Time(**dict_message['header']['stamp']), 'odom', 'base_link')
+                        rospy.Time(**dict_message['header']['stamp']), 'base_footprint', 'odom')
         
         if prev_stamp is not None:
             tdiff =  rospy.Time(**dict_message['header']['stamp']) - prev_stamp
