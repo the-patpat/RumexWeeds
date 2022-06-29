@@ -7,6 +7,7 @@ from std_msgs.msg import Float32
 
 import sys
 sys.path.insert(0, "/home/pat/scratch")
+
 sys.path.insert(0, "/home/pat/scratch/yolor")
 from yolor.models.models import *
 from yolor.utils.general import non_max_suppression, xyxy2xywh
@@ -49,11 +50,11 @@ class DetectorNode:
         im0 = deepcopy(img)
 
         img = letterbox(img, new_shape=(640,640))[0]
-        rospy.loginfo(f"letterbox return np array with shape {img.shape}")
+        rospy.logdebug(f"letterbox return np array with shape {img.shape}")
         img = np.ascontiguousarray(img[:, :, ::-1]) #BGR to RGB
-        rospy.loginfo("Moving to GPU")
+        rospy.logdebug("Moving to GPU")
         img = torch.from_numpy(img).to('cuda')
-        rospy.loginfo("Moved to GPU")
+        rospy.logdebug("Moved to GPU")
         img = img.half() 
         img /= 255.0  # 0 - 255 to 0.0 - 1.0
         if img.ndimension() == 3:
@@ -61,7 +62,7 @@ class DetectorNode:
 
         img = torch.permute(img, (0,3,1,2))
         with torch.no_grad():
-            rospy.loginfo(f"Passing tensor of size {img.shape} and dtype {img.dtype} to model")
+            rospy.logdebug(f"Passing tensor of size {img.shape} and dtype {img.dtype} to model")
             t01 = time.time()
             pred = self.model(img, augment=False)[0]
             t1 = time.time()
