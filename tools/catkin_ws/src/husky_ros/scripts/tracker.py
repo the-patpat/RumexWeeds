@@ -1,8 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import sys
 import rospy
 import numpy as np
-#import scipy as sp
+import scipy as sp
+import scipy.spatial 
 import copy
 import cv2
 #import torch
@@ -11,7 +12,7 @@ import tf
 
 #Little trick for mixed python2-python3 environments, cv_bridge is compiled with python3 too.
 #This one uses python2 and cv_bridge, thus we need to make sure that the python2 version of cv_bridge is loaded
-sys.path.insert(0, '/opt/ros/melodic/lib/python2.7/dist-packages')
+#sys.path.insert(0, '/opt/ros/melodic/lib/python2.7/dist-packages')
 
 from sensor_msgs.msg import Image
 from vision_msgs.msg import Detection2DArray
@@ -139,7 +140,7 @@ class TrackingNode:
         self.detection_count_pub = rospy.Publisher("/tracker/detection_count", Float32, queue_size=10)
         self._dilateelement = cv2.getStructuringElement(cv2.MORPH_RECT, (201,201))
         self.tf_listener = tf.TransformListener()
-        self.detection_database = []
+        self.detection_database = np.zeros((0,0)) 
         pass
     
     def handle_image(self, msg):
@@ -148,7 +149,7 @@ class TrackingNode:
             trans, rot = self.tf_listener.lookupTransform('odom', 'camera_link', rospy.Time(0))
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
            pass 
-        rospy.loginfo("Current location of camera is: x/y/z {}".format(trans)) 
+        #rospy.loginfo("Current location of camera is: x/y/z {}".format(trans)) 
     
         #Get length of detections
         if len(msg.detections) > 0 and abs(self.detection_count - len(msg.detections)) == 0 :
@@ -195,8 +196,33 @@ class TrackingNode:
             self.sift_time_pub.publish(Float32(t1-t0))
 
             #Compare candidate boxes with boxes from previous pictures
-            if len(self.detection_database) > 0:
-                det_curr = np.asarray(detections)
+            if self.detection_database.shape[0] > 0 and len(detections) > 0:
+                det_curr = np.asarray(detections).reshape(-1,4)
+                dist = scipy.spatial.distance.cdist(det_curr[:, :2], self.detection_database[:, :2])
+                if dist.shape[0] > dist.shape[1]:
+                    #More detections now than in the previous frame
+                    #Match direction: previous -> current. Unmatched are the new ones
+                    closest_previous_to_now = np.argmin(dist, axis=0)
+                    hist, _ = np.histogram(closest_previous_to_now, bins=np.max(closest_previous_to_now)+1)
+                    if (hist > 1).any():
+                        rospy.logwarn("Multiple sources matched to one target")
+                    for i,j in enumerate(closest_previous_to_now):
+                        print(f"matching previous detection {i} to current detection {j}")
+                elif dist.shape[0] < dist.shape[1]:
+                    #Other direction: current -> previous
+                    closest_now_to_previous = np.argmin(dist, axis=1) 
+                    hist, _ = np.histogram(closest_now_to_previous, bins=np.max(closest_now_to_previous)+1)
+                    if (hist > 1).any():
+                        rospy.logwarn("Multiple sources matched to one target")
+                    for i,j in enumerate(closest_now_to_previous):
+                        print(f"matching current detection {i} to previous detection {j}")
+                    pass
+                else:
+                    pass
+
+                print(dist)
+            
+            self.detection_database = np.asarray(detections).reshape(-1,4)
                 
 
             if self.state == "detected_new":
