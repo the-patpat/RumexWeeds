@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # license removed for brevity
+import sys
+sys.path.insert(0,'/opt/ros/melodic/lib/python2.7/dist-packages')
 import rospy
 from std_msgs.msg import Header
 from geometry_msgs.msg import PoseWithCovariance, TwistWithCovariance, Twist, Pose, Quaternion, Vector3

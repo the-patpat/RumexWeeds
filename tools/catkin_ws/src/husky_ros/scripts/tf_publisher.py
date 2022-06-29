@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+import sys
+
+#we're using python2 but we also use a tf version compiled with python3
+#Fix path
+sys.path.insert(0,'/opt/ros/melodic/lib/python2.7/dist-packages')
 import rospy
 import tf
 import json
