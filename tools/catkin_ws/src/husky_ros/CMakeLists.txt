@@ -54,6 +54,7 @@ find_package(catkin REQUIRED COMPONENTS
    DIRECTORY msg
    FILES
    Detection2DArrayWithImage.msg
+   ImageWithId.msg
  )
 
 ## Generate services in the 'srv' folder

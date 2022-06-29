@@ -5,12 +5,13 @@ import scipy as sp
 import copy
 import cv2
 import torch
+import time
 
 
 from sensor_msgs.msg import Image
 from vision_msgs.msg import Detection2DArray
 from cv_bridge import CvBridge
-from std_msgs.msg import String
+from std_msgs.msg import String, Float32
 from husky_ros.msg import Detection2DArrayWithImage
 
 #from yolor/utils/general.py
@@ -104,9 +105,15 @@ class TrackingNode:
                         np.asarray([[1, 1, 0, 0], [0, 1, 0, 0], [0, 0, 1, 1], [0, 0, 0, 1]]))
         
         #Feature tracking
-        self.feature_tracker = cv2.SIFT_create()
-        self._flann = (cv2.FlannBasedMatcher(dict(algorithm=1, trees=5), dict(checks=50)))
-        self.image_pub = rospy.Publisher("sift_view", Image, queue_size=10)
+        # self.feature_tracker = cv2.SIFT_create()
+        self.feature_tracker = cv2.ORB_create(nfeatures=50000)
+        FLANN_INDEX_LSH = 6
+        index_params= dict(algorithm = FLANN_INDEX_LSH,
+                   table_number = 6, # 12
+                   key_size = 12,     # 20
+                   multi_probe_level = 1) #2 
+        # self._flann = (cv2.FlannBasedMatcher(dict(algorithm=1, trees=5), dict(checks=50)))
+        self._flann = cv2.FlannBasedMatcher(index_params, dict(checks=50))
         self.image_sub = rospy.Subscriber("detections", Detection2DArrayWithImage, self.handle_image)
         self._bridge = CvBridge() 
         self.state = None
@@ -118,8 +125,11 @@ class TrackingNode:
                             singlePointColor = (255,0,0),
                             matchesMask = None,
                             flags = cv2.DrawMatchesFlags_DEFAULT)
-        self.vis_match_pub = rospy.Publisher("vis_match", Image, queue_size=10)
-        self.state_pub = rospy.Publisher("tracker_state", String, queue_size=10)
+        self.vis_match_pub = rospy.Publisher("tracker/vis_match", Image, queue_size=10)
+        self.state_pub = rospy.Publisher("tracker/tracker_state", String, queue_size=10)
+        self.sift_time_pub = rospy.Publisher("tracker/sift_time/detect", Float32, queue_size=10)
+        self.sift_time_match_pub = rospy.Publisher("tracker/sift_time/match", Float32, queue_size=10)
+        self._dilateelement = cv2.getStructuringElement(cv2.MORPH_RECT, (201,201))
         pass
     
     def handle_image(self, msg):
@@ -147,9 +157,9 @@ class TrackingNode:
         if self.state in ["detected_new", "detected_loss", "none_detected"]:
             #Calculate features in ROIs (detected areas)
             
-            img = self._bridge.imgmsg_to_cv2(msg.source_img)
+            img = self._bridge.imgmsg_to_cv2(msg.source_img.img)
             if self.state != "none_detected":
-                box_mask = np.zeros((msg.source_img.height, msg.source_img.width), dtype=np.uint8)
+                box_mask = np.zeros((msg.source_img.img.height, msg.source_img.img.width), dtype=np.uint8)
             else:
                 box_mask = None
             for detection in msg.detections:
@@ -157,7 +167,12 @@ class TrackingNode:
                              detection.bbox.size_x, detection.bbox.size_y]).reshape(1,4)
                 tl_x, tl_y, br_x, br_y = np.squeeze(xywh2xyxy(bbox), axis=0).astype(int)
                 box_mask[tl_y:(br_y+1), tl_x:(br_x+1)] = 1
+                box_mask = cv2.dilate(box_mask, self._dilateelement)
+            t0 = time.time()
             kp, des = self.feature_tracker.detectAndCompute(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), box_mask)
+            t1 = time.time()
+            self.sift_time_pub.publish(Float32(t1-t0))
+
             if self.state == "detected_new":
                 self.kp, self.des = kp, des
                 self.img = copy.deepcopy(img)
@@ -166,13 +181,18 @@ class TrackingNode:
         if self.state in ["detected_loss", "none_detected"]:
             #Do matching
 
+            t0 = time.time()
             matches = self._flann.knnMatch(self.des, des, k=2)
+            t1 = time.time()
+            self.sift_time_match_pub.publish(Float32(t1-t0))
             
             matchesMask = [[0,0] for i in range(len(matches))]
             # ratio test as per Lowe's paper
-            for i,(m,n) in enumerate(matches):
-                if m.distance < 0.7*n.distance:
-                    matchesMask[i]=[1,0]
+            matches = np.asarray(matches, dtype=object)
+            if len(matches.shape) > 1:
+                for i,(m,n) in enumerate(matches):
+                    if m.distance < 0.7*n.distance:
+                        matchesMask[i]=[1,0]
             self.draw_params["matchesMask"] = matchesMask
             img_match = cv2.drawMatchesKnn(self.img,self.kp,img, kp, matches, None, **self.draw_params)
             self.vis_match_pub.publish(self._bridge.cv2_to_imgmsg(img_match))

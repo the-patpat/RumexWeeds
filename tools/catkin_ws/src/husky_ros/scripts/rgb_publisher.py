@@ -3,6 +3,7 @@
 import rospy
 from std_msgs.msg import Header
 from sensor_msgs.msg import Image
+from husky_ros.msg import ImageWithId
 #message
 import json
 import numpy as np
@@ -19,7 +20,8 @@ def talker(seq_dir):
 
     keys = list(rgb_hist.keys())
     keys = iter(sorted(keys))
-    pub = rospy.Publisher('image', Image, queue_size=10)
+    pub = rospy.Publisher('image_id', ImageWithId, queue_size=10)
+    raw_pub = rospy.Publisher('image', Image, queue_size=10)
     rospy.init_node('rgb_publisher', anonymous=True)
     rate = rospy.Rate(5) # 10hz
     bridge = CvBridge()
@@ -48,8 +50,10 @@ def talker(seq_dir):
             img_msg.header = header
             # img_msg = Image(header=header, height=img.shape[0], width=img.shape[1],
                 # encoding="bgr8", step=3*img.shape[1], data=img.flatten().tolist())
+            imgid_msg = ImageWithId(img=img_msg, id=frame)
 
-            pub.publish(img_msg) 
+            pub.publish(imgid_msg) 
+            raw_pub.publish(img_msg)
         else:
             rospy.logwarn("Image file {} not found!".format(img_path))
         rate.sleep()

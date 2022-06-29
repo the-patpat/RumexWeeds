@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import queue
 import rospy
 from sensor_msgs.msg import Image
 from vision_msgs.msg import Detection2DArray, Detection2D, ObjectHypothesisWithPose, BoundingBox2D
@@ -16,7 +15,7 @@ from yolor.utils.plots import plot_one_box
 import numpy as np
 import torch
 from copy import deepcopy
-from husky_ros.msg import Detection2DArrayWithImage
+from husky_ros.msg import Detection2DArrayWithImage, ImageWithId
 
 from cv_bridge import CvBridge
 
@@ -35,7 +34,7 @@ class DetectorNode:
         self.model.half()  # to FP16
         self.model(torch.zeros((1,3,640,640), device='cuda').half())
         rospy.loginfo("Loaded YOLOR model")
-        self.subscriber = rospy.Subscriber("image", Image, self.handle_image, queue_size=10)
+        self.subscriber = rospy.Subscriber("image_id", ImageWithId, self.handle_image, queue_size=10)
         self.publisher = rospy.Publisher("detections", Detection2DArrayWithImage, queue_size=10)
         self.vis_publisher = rospy.Publisher("visual_detections", Image, queue_size=10)
         self.bridge = CvBridge()
@@ -46,7 +45,7 @@ class DetectorNode:
 
     def handle_image(self, data):
         t0 = time.time()
-        img = self.bridge.imgmsg_to_cv2(data)
+        img = self.bridge.imgmsg_to_cv2(data.img)
         im0 = deepcopy(img)
 
         img = letterbox(img, new_shape=(640,640))[0]
@@ -90,13 +89,12 @@ class DetectorNode:
             msg.detections.append(Detection2D(bbox=bbox, results=[obj_hyp], source_img=self.bridge.cv2_to_imgmsg(deepcopy(im0))))
             
             plot_one_box(p[:4], im0, label="rumex: %.2f" % p[-2], color=(255,0,0), line_thickness=3)
-        msg.source_img = self.bridge.cv2_to_imgmsg(deepcopy(im0))
+        msg.source_img = ImageWithId(img=self.bridge.cv2_to_imgmsg(deepcopy(im0)), id=data.id)
         
         t1 = time.time()
         self.inference_time_publisher.publish(Float32(t1-t0))
         self.publisher.publish(msg)
-        self.vis_publisher.publish(self.bridge.cv2_to_imgmsg(im0))
-            
+        self.vis_publisher.publish(self.bridge.cv2_to_imgmsg(im0))            
 
 if __name__ == "__main__":
     try:
