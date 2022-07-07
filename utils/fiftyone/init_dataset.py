@@ -76,7 +76,6 @@ else:
         dataset.persistent = True
 
 #%% Load GPS, IMU, odometry data, train/test/val category, timestamp, single class field
-print(dataset)
 dataset.clone_sample_field('ground_truth_detections', 'ground_truth_detections_single')
 with fo.ProgressBar() as pb:
     for sample in pb(dataset):
@@ -87,7 +86,6 @@ with fo.ProgressBar() as pb:
                 gps_dict = json.load(f)
                 gps_data = gps_dict[filename.replace('_rgb', '')]
                 sample['location'] = fo.GeoLocation(point=[gps_data['longitude'], gps_data['latitude']])
-                print(f"Added GPS info to sample {filename}: {sample['location']}\r", end="")
                 sample.save()
                 f.close()
         if 'imu' not in sample.field_names or sample['imu'] is None:
