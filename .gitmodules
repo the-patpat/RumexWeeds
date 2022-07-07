@@ -1,6 +1,7 @@
 [submodule "tools/catkin_ws/src/nmea_navsat_driver"]
 	path = tools/catkin_ws/src/nmea_navsat_driver
 	url = https://github.com/ros-drivers/nmea_navsat_driver.git
+	branch = melodic-devel
 [submodule "tools/catkin_ws/src/rviz_satellite"]
 	path = tools/catkin_ws/src/rviz_satellite
 	url = https://github.com/nobleo/rviz_satellite.git
