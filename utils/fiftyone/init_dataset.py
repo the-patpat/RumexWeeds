@@ -32,8 +32,8 @@ if not fo.dataset_exists(base_name):
     # Create the dataset by creating the sub-datasets and appending them to a list
     # Iterate through every collection ({date}_{location}) and therein, iterate through every sequence
     datasets = []
-    for collection in glob.glob(os.path.join(dataset_top_dir + '2021*')):
-        for sub_dataset in glob.glob(os.path.join(collection + '/seq*')):
+    for collection in glob.glob(os.path.join(dataset_top_dir , '2021*')):
+        for sub_dataset in glob.glob(os.path.join(collection , 'seq*')):
             collection_name, seq_name = os.path.split(sub_dataset)
             collection_name = os.path.split(collection_name)[-1]
             name = f"{base_name}_{collection_name}_{seq_name}"
@@ -45,7 +45,7 @@ if not fo.dataset_exists(base_name):
                     name=name,
                     data_path=data_path,
                     labels_path=labels_path, 
-                    label_field="ground_truth_detections",
+                    label_field="ground_truth",
                     tags=f"{collection_name}_{seq_name}"
                 ))
             else:
@@ -76,13 +76,14 @@ else:
         dataset.persistent = True
 
 #%% Load GPS, IMU, odometry data, train/test/val category, timestamp, single class field
+print(dataset)
 dataset.clone_sample_field('ground_truth_detections', 'ground_truth_detections_single')
 with fo.ProgressBar() as pb:
     for sample in pb(dataset):
         if 'location' not in sample.field_names or sample['location'] is None:
             filepath, filename = os.path.split(sample.filepath)
             filename = os.path.splitext(filename)[0]
-            with open(os.path.join(filepath + '/../gps.json', 'r'))as f:
+            with open(os.path.join(filepath , '../gps.json'), 'r') as f:
                 gps_dict = json.load(f)
                 gps_data = gps_dict[filename.replace('_rgb', '')]
                 sample['location'] = fo.GeoLocation(point=[gps_data['longitude'], gps_data['latitude']])
@@ -92,7 +93,7 @@ with fo.ProgressBar() as pb:
         if 'imu' not in sample.field_names or sample['imu'] is None:
             filepath, filename = os.path.split(sample.filepath)
             filename = os.path.splitext(filename)[0]
-            with open(os.path.join(filepath + '/../imu.json', 'r'))as f:
+            with open(os.path.join(filepath , '../imu.json'), 'r')as f:
                 gps_dict = json.load(f)
                 gps_data = gps_dict[filename.replace('_rgb', '')]
                 sample['imu'] = gps_data 
@@ -101,7 +102,7 @@ with fo.ProgressBar() as pb:
         if 'odom' not in sample.field_names or sample['odom'] is None:
             filepath, filename = os.path.split(sample.filepath)
             filename = os.path.splitext(filename)[0]
-            with open(os.path.join(filepath + '/../odom.json', 'r')) as f:
+            with open(os.path.join(filepath + '/../odom.json'), 'r') as f:
                 gps_dict = json.load(f)
                 gps_data = gps_dict[filename.replace('_rgb', '')]
                 sample['odom'] = gps_data 
