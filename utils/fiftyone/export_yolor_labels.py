@@ -8,7 +8,7 @@ dataset = fo.load_dataset("RumexWeeds")
 classes = dataset.default_classes
 
 
-os.makedirs("/RumexWeeds-YOLOR")
+os.makedirs("/RumexWeeds-YOLOR/labels")
 export_dir = "/RumexWeeds-YOLOR"
 
 # Omit the _single to export the two-class dataset
@@ -27,7 +27,7 @@ classes = ["rumex"]
 for split in splits:
     split_view = dataset.match_tags(split)
     split_view.export(
-        labels_path=export_dir+split,
+        labels_path=os.path.join(export_dir, "labels", split),
         dataset_type=fo.types.YOLOv5Dataset,
         label_field=label_field,
         split=split,
