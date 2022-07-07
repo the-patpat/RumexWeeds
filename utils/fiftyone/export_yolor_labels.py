@@ -33,3 +33,25 @@ for split in splits:
         split=split,
         classes=classes,
     )
+
+#%% make links
+for split in ["train", "test", "val"]:
+    with open(f'/RumexWeeds/dataset_splits/random_{split}.txt') as f:
+        image_list = f.readlines()
+        src_path = '/RumexWeeds/{0}'
+        dst_path = '/RumexWeeds-YOLOR/images/{0}/{1}'
+        os.makedirs(f'/RumexWeeds-YOLOR/images/{split}', exist_ok=True)
+        for image_path in image_list:
+            os.symlink(src_path.format(image_path.replace('\n', '')), dst_path.format(split, os.path.split(image_path.replace('\n', ''))[-1]) )
+#%% yaml and names file
+with open('/RumexWeeds-YOLOR/dataset.yaml', 'w') as f:
+    f.write("""
+names:
+- rumex
+nc: 1
+train: /RumexWeeds-YOLOR/images/train/
+val: /RumexWeeds-YOLOR/images/val/
+test: /RumexWeeds-YOLOR/images/test/""")
+
+with open('/RumexWeeds-YOLOR/dataset.names', 'w') as f:
+    f.write("rumex")
