@@ -9,8 +9,8 @@ import datetime as dt
 import time
 
 opt = argparse.ArgumentParser()
-opt.parse_args()
 opt.add_argument('--dataset_dir', type=str, help="Path to the RumexWeeds dataset", default="/RumexWeeds")
+opt.parse_args()
 
 base_name = "RumexWeeds"
 dataset_top_dir = opt.dataset_dir
