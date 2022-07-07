@@ -22,9 +22,9 @@ labels_path = "annotations.xml"
 #Read the train/test/val split (random) for tagging the samples
 d_split = {}
 for x in ["test", "train", "val"]:
-    with open(dataset_top_dir+f"dataset_splits/random_{x}.txt", 'r') as f:
+    with open(os.path.join(dataset_top_dir,f"dataset_splits/random_{x}.txt", 'r')) as f:
         #Take abspath, easier to find later
-        d_split[x] = [os.path.abspath(dataset_top_dir + loc_seq_pic.replace('\n', '')) for loc_seq_pic in f.readlines()]
+        d_split[x] = [os.path.abspath(os.path.join(dataset_top_dir , loc_seq_pic.replace('\n', ''))) for loc_seq_pic in f.readlines()]
         f.close()
 
 
@@ -32,8 +32,8 @@ if not fo.dataset_exists(base_name):
     # Create the dataset by creating the sub-datasets and appending them to a list
     # Iterate through every collection ({date}_{location}) and therein, iterate through every sequence
     datasets = []
-    for collection in glob.glob(dataset_top_dir + '2021*'):
-        for sub_dataset in glob.glob(collection + '/seq*'):
+    for collection in glob.glob(os.path.join(dataset_top_dir + '2021*')):
+        for sub_dataset in glob.glob(os.path.join(collection + '/seq*')):
             collection_name, seq_name = os.path.split(sub_dataset)
             collection_name = os.path.split(collection_name)[-1]
             name = f"{base_name}_{collection_name}_{seq_name}"
@@ -82,7 +82,7 @@ with fo.ProgressBar() as pb:
         if 'location' not in sample.field_names or sample['location'] is None:
             filepath, filename = os.path.split(sample.filepath)
             filename = os.path.splitext(filename)[0]
-            with open(filepath + '/../gps.json', 'r') as f:
+            with open(os.path.join(filepath + '/../gps.json', 'r'))as f:
                 gps_dict = json.load(f)
                 gps_data = gps_dict[filename.replace('_rgb', '')]
                 sample['location'] = fo.GeoLocation(point=[gps_data['longitude'], gps_data['latitude']])
@@ -92,7 +92,7 @@ with fo.ProgressBar() as pb:
         if 'imu' not in sample.field_names or sample['imu'] is None:
             filepath, filename = os.path.split(sample.filepath)
             filename = os.path.splitext(filename)[0]
-            with open(filepath + '/../imu.json', 'r') as f:
+            with open(os.path.join(filepath + '/../imu.json', 'r'))as f:
                 gps_dict = json.load(f)
                 gps_data = gps_dict[filename.replace('_rgb', '')]
                 sample['imu'] = gps_data 
@@ -101,7 +101,7 @@ with fo.ProgressBar() as pb:
         if 'odom' not in sample.field_names or sample['odom'] is None:
             filepath, filename = os.path.split(sample.filepath)
             filename = os.path.splitext(filename)[0]
-            with open(filepath + '/../odom.json', 'r') as f:
+            with open(os.path.join(filepath + '/../odom.json', 'r')) as f:
                 gps_dict = json.load(f)
                 gps_data = gps_dict[filename.replace('_rgb', '')]
                 sample['odom'] = gps_data 
