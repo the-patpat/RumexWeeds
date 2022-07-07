@@ -208,7 +208,7 @@ Visualization Manager:
       Enabled: true
       Name: AerialMapDisplay
       Object URI: https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}.jpg90?access_token=<hidden>
-            Topic: /gps_msg
+      Topic: /gps_msg
       Value: true
       Zoom: 20
     - Angle Tolerance: 0.10000000149011612
