@@ -6,9 +6,9 @@ from geometry_msgs.msg import Pose2D
 from std_msgs.msg import Float32
 
 import sys
-sys.path.insert(0, "/home/pat/scratch")
+sys.path.insert(0, "/")
 
-sys.path.insert(0, "/home/pat/scratch/yolor")
+sys.path.insert(0, "/yolor")
 from yolor.models.models import *
 from yolor.utils.general import non_max_suppression, xyxy2xywh
 from yolor.utils.datasets import letterbox
@@ -28,8 +28,8 @@ class DetectorNode:
         rospy.loginfo("Starting DetectorNode.")
         # Load model
         rospy.loginfo("Loading YOLOR model")
-        self.model = Darknet('/home/pat/scratch/yolor/cfg/yolor_csp_rumex.cfg', (640, 640)).cuda()
-        self.model.load_state_dict(torch.load('/home/pat/scratch/yolor/runs/train/yolor_csp5/weights/best_ap.pt', map_location='cpu')['model'])
+        self.model = Darknet('/yolor/cfg/yolor_csp_rumex.cfg', (640, 640)).cuda()
+        self.model.load_state_dict(torch.load('/yolor/best_ap.pt', map_location='cpu')['model'])
         self.model.to('cuda').eval()
         self.model.training = False
         self.model.half()  # to FP16
