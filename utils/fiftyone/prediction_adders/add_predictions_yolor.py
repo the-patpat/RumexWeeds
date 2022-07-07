@@ -1,11 +1,19 @@
 #%%
 import fiftyone as fo
 import os
+import argparse
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument("--fo_field", str, help="Name of FiftyOne field that will hold the predictions", default="predictions_yolor")
+parser.add_argument("--preds_folder", str, help="Path to the prediction output folder")
+
+opt = parser.parse_args()
 
 #Load the dataset
 dataset = fo.load_dataset('RumexWeeds')
 
-classes = ['rumex_obtusifolius']
+classes = ['rumex']
 #Add the predictions
 #They're located in files under predictions/yolor/
 
@@ -55,15 +63,4 @@ def add_predictions_yolo(dataset, pred_directory, field_name, classes, include_t
     dataset.save()
     return failed_files
 
-#%% Add the rumex_obs only predictions, inference 1920
-add_predictions_yolo(dataset, '/home/pat/yolor/inference/Output_eval_rumex_yolor_p6', "predictions_yolor_p6_1920", ["rumex_obtusifolius"])
-
-#%%
-#Add the single-class rumex predictions, inference 640, conf_thresh 0.01, nms_thresh 0.65
-#This is the model trained from scratch, however we should compare all pre-trained models and then, as an optimization in the report say that training from scratch is more 
-#suitable for this special dataset
-failed_files = add_predictions_yolo(dataset, '/home/pat/gbar_transfer/scratch/yolor/inference/csp', "predictions_yolor_csp_single", ["rumex"], include_train=False)
-#%%
-#Add single-class rumex predictions, conf_thresh 0.01, inference 640, nms_thresh 0.65
-#Based off pre-trained model
-failed_files = add_predictions_yolo(dataset, '/home/pat/gbar_transfer/scratch/yolor/inference/csp_pretrained_nms65', "predictions_yolor_csp_single_pt", ["rumex"], include_train=False)
+failed_files = add_predictions_yolo(dataset, opt.preds_folder, opt.fo_field, ["rumex"], include_train=False, split_directory=True)
