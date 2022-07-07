@@ -7,4 +7,4 @@ Header header
 vision_msgs/Detection2D[] detections
 
 #The source image of the detections (top-level)
-sensor_msgs/Image source_img
+husky_ros/ImageWithId source_img

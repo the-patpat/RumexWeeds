@@ -19,13 +19,13 @@ def set_ros_time(seq_dir, use_sim_time=True):
         try:
             if use_sim_time:
                 now = next(times_iter)
-                rospy.loginfo("Set rospy time to {}. Output of rospy.Time.now() is: {}".format(now, rospy.Time.now()))
+                rospy.logdebug("Set rospy time to {}. Output of rospy.Time.now() is: {}".format(now, rospy.Time.now()))
                 message_pub.publish(Clock(rospy.Time(nsecs=now)))
                 sleep(0.2)
             else:
                 now = next(times_iter)
                 rospy.Time.set(nsecs=now)
-                rospy.loginfo("Set rospy time to {}. Output of rospy.Time.now() is: {}".format(now, rospy.Time.now()))
+                rospy.logdebug("Set rospy time to {}. Output of rospy.Time.now() is: {}".format(now, rospy.Time.now()))
                 rate.sleep()
         except StopIteration:
             rospy.signal_shutdown("Iterator exhausted")

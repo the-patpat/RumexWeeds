@@ -40,7 +40,7 @@
 
     <!--node name="static_tf_pub" pkg="tf" type="static_transform_publisher" output="screen" args="0 0 0 0 0 0 base_footprint odom 10" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/-->  
     <node name="static_tf_pub" pkg="tf" type="static_transform_publisher" output="screen" args="0 0 0 0 0 0 odom map 10" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>  
-    <node name="static_tf_pub_imu" pkg="tf" type="static_transform_publisher" output="screen" args="0 0 0 3.141 1.5708 0 imu_link imu_link_enu 10" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>  
+    <node name="static_tf_pub_imu" pkg="tf" type="static_transform_publisher" output="screen" args="0 0 0 -1.5707963 0 1.5707963 imu_link imu_link_enu 10" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>  
     <node name="imu_filter" pkg="imu_filter_madgwick" type="imu_filter_node" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' ">
         <remap from="imu/data_raw" to="/imu_msg"/>
         <param name="publish_debug_topics" value="True"/>
@@ -51,11 +51,13 @@
         <remap from="imu_out" to="/imu_enu"/>
         <param name="target_frame" value="imu_link_enu"/>
     </node>
-    <include file="$(find husky_ros)/launch/launch_navsat_transform_node.launch" pass_all_args="true"/>
+    <!--include file="$(find husky_ros)/launch/launch_navsat_transform_node.launch" pass_all_args="true"/-->
+    <!--include file="$(find husky_ros)/launch/launch_ekf_localization.launch" pass_all_args="true"/-->
     <node name="rgb_pub" pkg="husky_ros" type="rgb_publisher.py" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>
     <node name="gps_pub" pkg="husky_ros" type="gps_publisher.py" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>
     <node name="imu_pub" pkg="husky_ros" type="imu_publisher.py" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>
     <node name="odom_pub" pkg="husky_ros" type="odom_publisher.py" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>   
     <node name="get_gps_long" pkg="graph_rviz_plugin" type="subtopic_repub.py" output="screen" args="/gps_msg/longitude /graph_gps_long" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>
     <node name="get_gps_lat" pkg="graph_rviz_plugin" type="subtopic_repub.py" output="screen" args="/gps_msg/latitude /graph_gps_lat" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>
+
 </launch>
