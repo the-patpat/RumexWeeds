@@ -6,10 +6,15 @@ import glob
 import copy
 import torch 
 import sys
+import argparse
 from fiftyone import ViewField as F
 
+opt = argparse.ArgumentParser()
+opt.parse_args()
+opt.add_argument('--dataset_dir', type=str, help="Path to the RumexWeeds dataset", default="/RumexWeeds")
+
 base_name = "RumexWeeds"
-dataset_top_dir = "../data/"
+dataset_top_dir = opt.dataset_dir
 data_path = "imgs/"
 labels_path = "annotations.xml"
 
@@ -41,7 +46,7 @@ if not fo.dataset_exists(base_name):
                     name=name,
                     data_path=data_path,
                     labels_path=labels_path, 
-                    label_field="ground_truth",
+                    label_field="ground_truth_detections",
                     tags=f"{collection_name}_{seq_name}"
                 ))
             else:
@@ -71,9 +76,7 @@ else:
     if not dataset.persistent:
         dataset.persistent = True
 
-session = fo.Session(dataset=dataset, auto=False)
-
-#%% Load GPS data, train/test/val category 
+#%% Load GPS, IMU, odometry data, train/test/val category 
 with fo.ProgressBar() as pb:
     for sample in pb(dataset):
         if 'location' not in sample.field_names or sample['location'] is None:
@@ -222,11 +225,7 @@ bb_hist = fo.NumericalHistogram(F('ground_truth_detections.detections[]').apply(
 bb_hist.show()
 #%% Area histogram
 bb_area_hist = fo.NumericalHistogram(F('ground_truth_detections.detections[]').apply(F('bounding_box')[2] * F('bounding_box')[3]), init_view=dataset)
-<<<<<<< Updated upstream
-session.plots.attach(bb_area_hist)
-=======
 #session.plots.attach(bb_area_hist)
->>>>>>> Stashed changes
 bb_area_hist.show()
 
 #%%BB dimension clustering
@@ -245,12 +244,9 @@ km = KMeans(n_clusters=9, random_state=0)
 
 km.fit(bb_width_height)
 fig, ax = plt.subplots(1)
-#ax.set_ylim(0, 1200)
-#ax.set_xlim(0, 1920)
-ax.set_ylim(0, 1.8)
-ax.set_xlim(0, 1.8)
+ax.set_ylim(0, 1.2)
+ax.set_xlim(0, 1.2)
 ax.invert_yaxis()
-#ax.scatter(km.cluster_centers_[:, 0], km.cluster_centers_[:, 1])
 
 #Get bb top left/right
 bb_top_left_corner = np.asarray(dataset.values(F('ground_truth_detections.detections[]').apply(F('bounding_box'))[0:2]))
@@ -258,11 +254,9 @@ print(bb_width_height.shape)
 km_corner = KMeans(n_clusters=9, random_state=0)
 
 km_corner.fit(bb_top_left_corner)
-# ax.scatter(km_corner.cluster_centers_[:, 0]*1920, km_corner.cluster_centers_[:, 1]*1200)
 ax.scatter(km_corner.cluster_centers_[:, 0], km_corner.cluster_centers_[:, 1])
 
 for dimension, anchor in zip(km.cluster_centers_, km_corner.cluster_centers_):
-    # ax.add_collection(PatchCollection([Rectangle((anchor[0]*1920, anchor[1]*1200), dimension[0]*1920, dimension[1]*1200)], alpha=0.2))
     ax.add_collection(PatchCollection([Rectangle((anchor[0], anchor[1]), dimension[0], dimension[1])], alpha=0.2))
 ax.set_title("K-means clustered (n_clusters=9) bounding boxes on RumexWeeds")
 
