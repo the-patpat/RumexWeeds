@@ -22,7 +22,7 @@ labels_path = "annotations.xml"
 #Read the train/test/val split (random) for tagging the samples
 d_split = {}
 for x in ["test", "train", "val"]:
-    with open(os.path.join(dataset_top_dir,f"dataset_splits/random_{x}.txt", 'r')) as f:
+    with open(os.path.join(dataset_top_dir,f"dataset_splits/random_{x}.txt"), 'r') as f:
         #Take abspath, easier to find later
         d_split[x] = [os.path.abspath(os.path.join(dataset_top_dir , loc_seq_pic.replace('\n', ''))) for loc_seq_pic in f.readlines()]
         f.close()
