@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<launch>
+    <param name="use_sim_time" value="true"/>
+    <arg name="debug" default="false"/>
+    <arg name="node_start_delay" default="10.0"/>  
+    <arg name="seq_dir" default=""/>
+    <arg name="local_inference" default="true"/>
+    <arg name="jetson_ip" default="192.168.0.141"/>
+    <arg name="gui" default ="true"/> 
+    <param name="seq_dir" value="$(arg seq_dir)"/>
+
+    <group if="$(arg gui)">
+	<node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find husky_ros)/rviz.rviz"/>
+    </group>
+    
+    <!--Local inference uses GPU on same host, otherwise inference can be done thorugh jetson-->
+    <group if="$(arg local_inference)">
+        <node name="detector" pkg="husky_ros" type="detector.py" output="screen"/>
+    </group>
+    
+    <group unless="$(arg local_inference)">
+        <machine name="jetson_docker" address="$(arg jetson_ip)" ssh-port="6922" env-loader="/ros_entrypoint.sh" user="root" timeout="10.0">
+        </machine>
+        <node name="detector_jetson" machine="jetson_docker" pkg="husky_ros" type="detector_tensorrt.py" output="screen" args="_half_precision:=True"/> 
+    </group>
+
+    <node name="tracker" pkg="husky_ros" type="tracker.py" output="screen"/>
+
+    
+    <!--rqt debugging tools-->
+    <group if="$(arg debug)">
+        <node name="rqt_graph" pkg="rqt_graph" type="rqt_graph" output="screen"/>
+        <node name="rqt_tf_tree" pkg="rqt_tf_tree" type="rqt_tf_tree" output="screen"/>
+    </group>
+     
+    <node name="settime" pkg="husky_ros" type="set_rostime.py" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>
+    <node name="tf_pub" pkg="husky_ros" type="tf_publisher.py" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>
+    <!--node name="odom_tf_pub" pkg="tf" type="tf_echo" args="odom base_link"/-->
+
+
+    <!--node name="static_tf_pub" pkg="tf" type="static_transform_publisher" output="screen" args="0 0 0 0 0 0 base_footprint odom 10" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/-->  
+    <node name="static_tf_pub" pkg="tf" type="static_transform_publisher" output="screen" args="0 0 0 0 0 0 odom map 10" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>  
+    <node name="static_tf_pub_imu" pkg="tf" type="static_transform_publisher" output="screen" args="0 0 0 -1.5707963 0 1.5707963 imu_link imu_link_enu 10" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>  
+    <node name="imu_filter" pkg="imu_filter_madgwick" type="imu_filter_node" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' ">
+        <remap from="imu/data_raw" to="/imu_msg"/>
+        <param name="publish_debug_topics" value="True"/>
+        <param name="use_mag" value="False"/>
+    </node>
+    <node pkg="imu_transformer" type="imu_transformer_node" name="imu_data_transformer" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' ">
+        <remap from="imu_in" to="/imu"/>
+        <remap from="imu_out" to="/imu_enu"/>
+        <param name="target_frame" value="imu_link_enu"/>
+    </node>
+    <!--include file="$(find husky_ros)/launch/launch_navsat_transform_node.launch" pass_all_args="true"/-->
+    <!--include file="$(find husky_ros)/launch/launch_ekf_localization.launch" pass_all_args="true"/-->
+    <node name="rgb_pub" pkg="husky_ros" type="rgb_publisher.py" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>
+    <node name="gps_pub" pkg="husky_ros" type="gps_publisher.py" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>
+    <node name="imu_pub" pkg="husky_ros" type="imu_publisher.py" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>
+    <node name="odom_pub" pkg="husky_ros" type="odom_publisher.py" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>   
+    <node name="get_gps_long" pkg="graph_rviz_plugin" type="subtopic_repub.py" output="screen" args="/gps_msg/longitude /graph_gps_long" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>
+    <node name="get_gps_lat" pkg="graph_rviz_plugin" type="subtopic_repub.py" output="screen" args="/gps_msg/latitude /graph_gps_lat" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "/>
+
+</launch>

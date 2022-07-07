@@ -1,0 +1,13 @@
+[submodule "tools/catkin_ws/src/nmea_navsat_driver"]
+	path = tools/catkin_ws/src/nmea_navsat_driver
+	url = https://github.com/ros-drivers/nmea_navsat_driver.git
+[submodule "tools/catkin_ws/src/rviz_satellite"]
+	path = tools/catkin_ws/src/rviz_satellite
+	url = https://github.com/nobleo/rviz_satellite.git
+[submodule "tools/catkin_ws/src/vision_opencv"]
+	path = tools/catkin_ws/src/vision_opencv
+	url = https://github.com/ros-perception/vision_opencv.git
+[submodule "tools/catkin_ws/src/graph_rviz_plugin"]
+	path = tools/catkin_ws/src/graph_rviz_plugin
+	url = https://github.com/the-patpat/graph_rviz_plugin.git
+	branch = feature/scatter
