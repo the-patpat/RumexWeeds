@@ -8,7 +8,7 @@ dataset = fo.load_dataset("RumexWeeds")
 classes = dataset.default_classes
 
 
-os.makedirs("/RumexWeeds-YOLOR/labels")
+os.makedirs("/RumexWeeds-YOLOR/labels", exist_ok=True)
 export_dir = "/RumexWeeds-YOLOR"
 
 # Omit the _single to export the two-class dataset
