@@ -33,8 +33,8 @@ def add_predictions_yolo(dataset, pred_directory, field_name, classes, include_t
             
             #If no train predictions are available skip this
             if not (split == "train" and not include_train): 
-                if os.path.isfile(f'{pred_directory}/' + (f'{split}/' if split_directory else '') + filename):
-                    with open(f'{pred_directory}/' + (f'{split}/' if split_directory else '') + filename) as f:
+                if os.path.isfile(os.path.join(f'{pred_directory}/' , (f'{split}/' if split_directory else '') , filename)):
+                    with open(os.path.join(f'{pred_directory}/' , (f'{split}/' if split_directory else '') , filename)) as f:
                         detections = []
                         predictions = f.readlines()
                         for prediction in predictions:
