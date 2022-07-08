@@ -5,8 +5,8 @@ import argparse
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--fo_field", str, help="Name of FiftyOne field that will hold the predictions", default="predictions_yolor")
-parser.add_argument("--preds_folder", str, help="Path to the prediction output folder")
+parser.add_argument("--fo_field", type=str, help="Name of FiftyOne field that will hold the predictions", default="predictions_yolor")
+parser.add_argument("--preds_folder", type=str, help="Path to the prediction output folder")
 
 opt = parser.parse_args()
 
