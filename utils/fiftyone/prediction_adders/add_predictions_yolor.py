@@ -63,4 +63,4 @@ def add_predictions_yolo(dataset, pred_directory, field_name, classes, include_t
     dataset.save()
     return failed_files
 
-failed_files = add_predictions_yolo(dataset, opt.preds_folder, opt.fo_field, ["rumex"], include_train=False, split_directory=True)
+failed_files = add_predictions_yolo(dataset, opt.preds_folder, opt.fo_field, ["rumex"], include_train=False, split_directory=False)
