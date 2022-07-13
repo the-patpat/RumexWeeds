@@ -16,6 +16,7 @@ from yolor.utils.plots import plot_one_box
 import numpy as np
 import torch
 from copy import deepcopy
+import time
 from husky_ros.msg import Detection2DArrayWithImage, ImageWithId
 
 from cv_bridge import CvBridge
@@ -42,6 +43,7 @@ class DetectorNode:
         self.inference_time_publisher = rospy.Publisher("detector/inference_time", Float32, queue_size=10)
         self.model_time_publisher = rospy.Publisher("detector/model_time", Float32, queue_size=10 )
         self.nms_time_publisher = rospy.Publisher("detector/nms_time", Float32, queue_size=10)
+        self.mask_publisher = rospy.Publisher("detection_mask", Image, queue_size=10)
         rospy.loginfo("Initialization finished. Starting to listen....")
 
     def handle_image(self, data):
@@ -77,10 +79,12 @@ class DetectorNode:
 
         #Pred shape is (batch, detections, 6(x1,y1,x2,y2,conf,cls))
         msg = Detection2DArrayWithImage(detections=[])
+        mask = np.zeros_like(im0, dtype=np.uint8)
         for p in pred:
             obj_hyp = ObjectHypothesisWithPose(id=0, score=p[-2])
             p[:4] = scale_coords(img.shape[2:], p[:4].unsqueeze(0), im0.shape).round().squeeze(0)
             (xc,yc,w,h) = xyxy2xywh(p[0:4].unsqueeze(0)).squeeze(0)
+            mask[(yc - yc//8):(yc + yc//8), (xc - xc//8):(xc + xc//8), :] = (128,64,128)
             # xc *= 640
             # yc *= 640
             # w *= 640
@@ -95,6 +99,7 @@ class DetectorNode:
         t1 = time.time()
         self.inference_time_publisher.publish(Float32(t1-t0))
         self.publisher.publish(msg)
+        self.mask_publisher.publish(self.bridge.cv2_to_imgmsg(mask))
         self.vis_publisher.publish(self.bridge.cv2_to_imgmsg(im0))            
 
 if __name__ == "__main__":
