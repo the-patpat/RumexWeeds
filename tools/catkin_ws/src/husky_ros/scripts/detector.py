@@ -88,7 +88,7 @@ class DetectorNode:
             yc = int(yc)
             w = int(w)
             h = int(h)
-            mask[(yc - yc//8):(yc + yc//8), (xc - xc//8):(xc + xc//8), :] = (128,64,128)
+            mask[(yc - h//8):(yc + h//8), (xc - w//8):(xc + w//8), :] = (128,64,128)
             # xc *= 640
             # yc *= 640
             # w *= 640
