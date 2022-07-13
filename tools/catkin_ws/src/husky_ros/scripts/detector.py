@@ -83,7 +83,11 @@ class DetectorNode:
         for p in pred:
             obj_hyp = ObjectHypothesisWithPose(id=0, score=p[-2])
             p[:4] = scale_coords(img.shape[2:], p[:4].unsqueeze(0), im0.shape).round().squeeze(0)
-            (xc,yc,w,h) = xyxy2xywh(p[0:4].unsqueeze(0)).squeeze(0).astype(int)
+            (xc,yc,w,h) = xyxy2xywh(p[0:4].unsqueeze(0)).squeeze(0)
+            xc = int(xc)
+            yc = int(yc)
+            w = int(w)
+            h = int(h)
             mask[(yc - yc//8):(yc + yc//8), (xc - xc//8):(xc + xc//8), :] = (128,64,128)
             # xc *= 640
             # yc *= 640
