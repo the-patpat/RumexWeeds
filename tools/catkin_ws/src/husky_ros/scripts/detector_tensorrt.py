@@ -7,8 +7,8 @@ from geometry_msgs.msg import Pose2D
 from std_msgs.msg import Float32
 
 import sys
-sys.path.insert(0, "/home/galirumi/")
-sys.path.insert(0, "/home/galirumi/yolor")
+sys.path.insert(0, "/")
+sys.path.insert(0, "/yolor")
 from yolor.models.models import *
 from yolor.utils.general import non_max_suppression, xyxy2xywh
 from yolor.utils.datasets import letterbox
@@ -42,8 +42,11 @@ class DetectorNode:
         self.nms_time_publisher = rospy.Publisher("detector/nms_time", Float32, queue_size=10)
         self.vis_publisher = rospy.Publisher("visual_detections", Image, queue_size=10)
         self.bridge = CvBridge()
-
-        self.half = rospy.get_param('~half_precision')
+        
+        try:
+            self.half = rospy.get_param('~half_precision')
+        except:
+            self.half = True
 
         #Input and output types stay the same when using half precision, just the internal weights are less
         self.inference_dtype = np.float32
@@ -54,7 +57,7 @@ class DetectorNode:
         self.device = cuda.Device(0)
         self.__context = self.device.make_context()
         self._runtime = trt.Runtime(trt.Logger(trt.Logger.WARNING)) 
-        self._trt_file = open("/home/galirumi/best_ap_fp16.trt" if self.half else "/home/galirumi/best_ap.trt", "rb")
+        self._trt_file = open("best_ap_fp16_xavier.trt" if self.half else "/best_ap_xavier.trt", "rb")
         self._engine = self._runtime.deserialize_cuda_engine(self._trt_file.read())
         self._context = self._engine.create_execution_context()
         self.input_batch = np.zeros((1,3,640,640), dtype=self.inference_dtype)
