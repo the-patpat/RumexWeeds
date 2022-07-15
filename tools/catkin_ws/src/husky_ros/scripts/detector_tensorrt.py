@@ -57,7 +57,7 @@ class DetectorNode:
         self.device = cuda.Device(0)
         self.__context = self.device.make_context()
         self._runtime = trt.Runtime(trt.Logger(trt.Logger.WARNING)) 
-        self._trt_file = open("best_ap_fp16_xavier.trt" if self.half else "/best_ap_xavier.trt", "rb")
+        self._trt_file = open("/best_ap_fp16_xavier.trt" if self.half else "/best_ap_xavier.trt", "rb")
         self._engine = self._runtime.deserialize_cuda_engine(self._trt_file.read())
         self._context = self._engine.create_execution_context()
         self.input_batch = np.zeros((1,3,640,640), dtype=self.inference_dtype)
